@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="color-scheme" content="light dark">
+<title>Logroom — ブラウザでログ分析演習</title>
+<style>
+/*__CSS__*/
+/*__SLSTYLE__*/
+</style>
+</head>
+<body>
+<div class="app" id="app-shell">
+  <header class="app-header">
+    <a href="#main" class="skip-link">演習へ移動</a>
+    <div class="brand"><span class="brand-mark" aria-hidden="true">&gt;_</span><div><h1>Logroom<span class="edition"> / INCIDENT LAB</span></h1><p>ログをたどる。根拠をつかむ。</p></div></div>
+    <div class="header-right"><label class="language-control" for="language-select"><span>Language</span><select id="language-select" aria-label="Language"><option value="ja" data-language-name>日本語</option><option value="en" data-language-name>English</option><option value="th" data-language-name>ไทย</option></select></label><span class="offline"><span aria-hidden="true"></span>完全ローカル</span><button id="commands-open" class="button quiet" type="button">コマンド一覧</button><button id="guide-open" class="button quiet" type="button">使い方</button></div>
+  </header>
+  <div class="intro-strip"><p><strong>Linuxコマンドで、ログ分析の練習。</strong><span> インストール・アカウント・外部通信は不要です。</span></p><span class="simulation-label">合成ログ / コマンドの一部を再現</span></div>
+  <nav class="case-nav" aria-label="演習を選ぶ" id="case-nav"></nav>
+  <div class="case-select-wrap"><label for="case-select">演習ケース</label><select id="case-select" aria-label="演習ケースを選ぶ"></select></div>
+  <main id="main" class="workspace">
+    <section class="investigation" aria-label="調査ターミナル">
+      <div class="case-heading"><div><p class="eyebrow" id="case-meta"></p><h2 id="case-title"></h2></div><button type="button" class="button quiet small" id="context-open">前提・構成</button></div>
+      <p id="case-summary" class="case-summary"></p>
+      <div class="scenario-controls"><div class="scenario-status"><span id="scenario-state" class="scenario-badge" role="status" aria-live="polite">正常ログ</span><span id="scenario-summary">正常ログを調べてから攻撃を再現できます。</span></div><div class="scenario-actions"><button type="button" id="apply-attack" class="button attack">攻撃ログを生成</button><button id="case-reset" class="button quiet small" type="button">サラの状態に戻す</button></div></div>
+      <div class="terminal-layout-controls" aria-label="端末の表示調整"><button id="panel-toggle" type="button" class="button small" aria-controls="learning-panel" aria-expanded="true">演習パネルを隠す</button><label class="terminal-width-control">幅 <input id="terminal-width" type="range" min="40" max="80" step="2" value="62" aria-label="端末の横幅"><span id="width-label">62%</span></label><label>高さ <input id="terminal-height" type="range" min="180" max="800" step="20" value="360" aria-label="端末の高さ"><span id="height-label">自動</span></label><button id="layout-reset" type="button" class="text-button">標準に戻す</button></div>
+      <div class="terminal-shell">
+        <div class="terminal-bar"><span class="terminal-name"><span aria-hidden="true" class="terminal-dot"></span>analyst@logroom</span><span id="terminal-cwd" class="cwd"></span><button id="terminal-clear" class="terminal-button" type="button">画面を消去</button></div>
+        <div id="terminal-output" class="terminal-output" role="log" aria-label="コマンドの実行結果" aria-live="off"></div>
+        <form id="terminal-form" class="command-form" autocomplete="off"><label for="command-input" id="prompt" class="prompt">$</label><input id="command-input" name="command" spellcheck="false" autocapitalize="off" aria-describedby="terminal-help" aria-label="Linuxコマンド" placeholder="コマンドを入力して Enter" autocomplete="off"><button class="run-button" type="submit" aria-label="コマンドを実行">実行 <span aria-hidden="true">↵</span></button></form>
+        <div class="terminal-footer" id="terminal-help"><span>↑↓ 履歴 / Tab 補完 / Ctrl+L 消去</span><span id="last-exit" role="status" aria-live="polite">準備完了</span></div>
+      </div>
+      <div class="quick-start"><span>最初の一歩</span><button id="initial-command" type="button" class="command-chip"></button><button type="button" class="command-chip" data-command="help">help</button><button type="button" class="command-chip" data-command="ls -l /var/log">ls -l /var/log</button></div>
+      <details class="briefing"><summary>調査依頼と環境情報</summary><div id="briefing-content"></div></details>
+      <p class="environment-note">ここで扱うファイルは仮想です。実際のOSやサーバーは起動しません。PC上のファイルやネットワークにはアクセスしません。</p>
+    </section>
+    <aside class="learning" id="learning-panel" aria-label="演習と調査ノート">
+      <div class="panel-tabs" role="tablist" aria-label="学習パネル"><button type="button" role="tab" id="tab-tasks" aria-controls="panel-tasks" aria-selected="true">演習<span id="task-count"></span></button><button type="button" role="tab" id="tab-commands" aria-controls="panel-commands" aria-selected="false" tabindex="-1">コマンド手帳</button><button type="button" role="tab" id="tab-notes" aria-controls="panel-notes" aria-selected="false" tabindex="-1">メモ</button></div>
+      <section role="tabpanel" id="panel-tasks" aria-labelledby="tab-tasks"><div id="baseline-notice" class="baseline-notice"><strong>まずは正常な状態を観察</strong><p>通常のアクセス、認証や処理結果を調べてみましょう。「攻撃ログを生成」を押すと攻撃イベントが混ざり、設問を解けるようになります。</p><p>元の正常ログは <code>/baseline/var/log/</code> に残ります。攻撃後も <code>diff -u</code> で比較できます。</p></div><div class="progress-heading"><span>証拠から答えを見つける</span><span id="progress-label"></span></div><div class="progress-track"><div id="progress-fill"></div></div><div id="task-list"></div><details class="walkthrough" id="walkthrough"><summary>調査の進め方を見る</summary><p class="muted">以下は解答につながるコマンドです。まず自分で調べてから開くのがおすすめです。</p><div id="walkthrough-list"></div></details><div class="debrief-callout" id="debrief-callout"><strong id="debrief-status">演習後の解説</strong><p id="debrief-unlock-note">全問に正解すると解放されます。</p><button type="button" class="button primary" id="debrief-open" disabled>攻撃の詳しい解説を見る</button></div></section>
+      <section role="tabpanel" id="panel-commands" aria-labelledby="tab-commands" hidden><p class="panel-intro">例を押すと入力欄に入ります。Enterで実行してください。</p><div id="command-reference"></div><p class="subset-note">学習用に対応した構文だけが使えます。詳細は <button type="button" class="inline-command" data-command="help">help</button> または <button type="button" class="inline-command" data-command="help grep">help grep</button>。一般のLinuxと一部異なります。</p></section>
+      <section role="tabpanel" id="panel-notes" aria-labelledby="tab-notes" hidden><label for="notes" class="notes-label">観測した事実と推測を分けて残す</label><textarea id="notes" rows="14" placeholder="事実：ログの日時、IP、アカウント、処理結果&#10;根拠：ファイル名と行番号&#10;推測：考えられる原因&#10;追加確認：まだ分からないこと" spellcheck="false"></textarea><button type="button" id="export-report" class="button primary">調査メモを書き出す</button><p class="muted">解答・メモ・履歴・仮想ファイルの変更は、このブラウザのlocalStorageに自動保存します（Cookieではありません）。同じブラウザ・同じHTMLの保存先で続きから再開できます。データの削除、プライベート閲覧、保存を禁止する設定では残らない場合があります。大事な調査メモは書き出して残してください。</p></section>
+    </aside>
+  </main>
+  <footer class="app-footer"><span>LOGROOM <span class="version">v0.1.0</span> · 防御・ログ分析のための演習</span><span>AIで作成（OpenAI Codex）</span><span id="save-status" role="status">保存先を確認中</span></footer>
+</div>
+<dialog id="guide-dialog" aria-labelledby="guide-title"><div class="dialog-heading"><h2 id="guide-title">はじめてのLogroom</h2><button type="button" class="button quiet" data-close="guide-dialog">閉じる</button></div><p>このアプリとドキュメントは、OpenAI Codex（AI）を使って作成しました。</p><ol class="guide-steps"><li><strong>正常ログを観察する</strong><p>ケースを選び、「前提・構成」で状況とログの範囲を確認します。最初は正常なログだけが入っています。すべて架空のデータで、ログの時刻はUTCです。</p><code>cat /home/analyst/README.txt</code></li><li><strong>ボタンで攻撃ログを生成する</strong><p>攻撃イベントを演習ファイルに反映します。実際に攻撃を送信したり、SQLやOSコマンドを実行したりすることはありません。正常ログのコピーは /baseline 以下に残ります。</p><code>diff -u /baseline/var/log/auth.log /var/log/auth.log</code></li><li><strong>コマンドで調べて解答する</strong><p>検索・集計をパイプで組み合わせ、複数ログの根拠を確認します。「コマンド一覧」、段階的なヒント、解説も使えます。各ケースの全問に正解すると、攻撃全体の詳しい解説が開けます。終了コード1は、grepで一致なし、diffで差分ありの場合も表示されます。</p></li><li><strong>サラの状態からやり直す</strong><p>「サラの状態に戻す」で選択中の演習のログ、解答、メモ、履歴、作成ファイルを初期化します。他の演習は保持されます。</p></li></ol><div class="guide-limits"><strong>再現する範囲</strong><p>ファイルの移動・表示、検索、集計、差分比較、JSONの抽出、パイプ、仮想ファイルへの出力などを練習します。完全なLinuxシェルではなく、未対応のオプション・構文はエラーになります。サービス起動、パッケージ追加、実ネットワーク通信は行いません。</p><p>単独のHTMLファイルで動きます。組織の設定でローカルHTMLの実行が禁止されている場合は、同じファイルを許可された社内Webサイトに配置する必要があります。</p></div><button type="button" class="button primary" data-close="guide-dialog">演習に戻る</button></dialog>
+<dialog id="pager-dialog" aria-labelledby="pager-title" class="pager-dialog"><div class="dialog-heading"><h2 id="pager-title">less</h2><button type="button" class="button quiet" data-close="pager-dialog">閉じる / q</button></div><form id="pager-search-form" class="pager-search"><label for="pager-search">検索 /</label><input id="pager-search" type="search" placeholder="文字列で検索"><button type="submit" class="button">検索</button><button type="button" id="pager-next" class="button">次へ / n</button><span id="pager-match" role="status" aria-live="polite"></span></form><div id="pager-content" class="pager-content" tabindex="0"></div><p class="muted">Space / PageDown でスクロール · / で検索 · n / Shift+N で次 / 前の一致 · q で閉じる</p></dialog>
+<dialog id="reset-dialog" aria-labelledby="reset-title"><div class="dialog-heading"><h2 id="reset-title">サラの正常状態に戻しますか？</h2></div><p>選択中の演習から攻撃ログを取り除き、正常ログだけに戻します。解答、メモ、履歴、仮想ファイルへの変更も消去します。他の演習は保持されます。</p><div class="dialog-actions"><button type="button" class="button" data-close="reset-dialog">キャンセル</button><button type="button" class="button danger" id="reset-confirm">正常状態に戻す</button></div></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<dialog id="commands-dialog" class="commands-dialog" aria-labelledby="commands-title"><div class="dialog-heading"><div><h2 id="commands-title">使えるコマンド・オプション</h2><p class="muted" id="commands-total"></p></div><button type="button" class="button quiet" data-close="commands-dialog">閉じる</button></div><label class="command-filter-label" for="command-filter">コマンド名・用途で検索</label><input id="command-filter" class="command-filter" type="search" placeholder="例: grep / 集計 / 編集" autocomplete="off"><div class="commands-guide"><div id="commands-list" class="commands-list" role="group" aria-label="コマンドを選ぶ"></div><div class="commands-detail"><h3 id="command-detail-title"></h3><p id="command-detail-description"></p><pre id="command-detail-usage"></pre><div id="command-detail-options"></div><pre id="command-detail-notes"></pre><button type="button" class="button small" id="command-help-terminal">端末のhelpに入力</button><div id="command-manual"></div></div></div><p class="muted">ここにはこの演習環境で使える構文を表示しています。対応範囲外のオプションはエラーになります。</p></dialog>
+<dialog id="context-dialog" class="context-dialog" aria-labelledby="context-title"><div class="dialog-heading"><h2 id="context-title">前提・サーバ構成</h2><button type="button" class="button quiet" data-close="context-dialog">閉じる</button></div><div id="context-content"></div></dialog>
+<dialog id="debrief-dialog" class="context-dialog" aria-labelledby="debrief-title"><div class="dialog-heading"><h2 id="debrief-title">攻撃の詳しい解説</h2><button type="button" class="button quiet" data-close="debrief-dialog">閉じる</button></div><div id="debrief-content"></div></dialog>
+<dialog id="vi-dialog" class="vi-dialog" aria-labelledby="vi-title"><div class="dialog-heading"><div><h2 id="vi-title">vi · 基本操作</h2><p id="vi-path" class="vi-path"></p></div><div class="vi-actions"><button type="button" class="button primary small" id="vi-save-close">保存して閉じる</button><button type="button" class="button quiet small" id="vi-close">閉じる</button></div></div><div class="vi-editor"><pre id="vi-lines" class="vi-lines" aria-hidden="true" hidden></pre><textarea id="vi-buffer" aria-label="vi編集バッファ" spellcheck="false" autocapitalize="off" autocorrect="off" wrap="off" readonly></textarea></div><div class="vi-status"><span id="vi-mode">NORMAL</span><span id="vi-message" role="status" aria-live="polite"></span><span id="vi-position"></span></div><form id="vi-command-form" class="vi-command-form" hidden><label for="vi-command" id="vi-command-prompt">:</label><input id="vi-command" aria-label="viコマンドまたは検索" spellcheck="false" autocomplete="off" autocapitalize="off"><button type="submit" class="button small">実行</button></form><p class="vi-keys">i / a / o 編集 · Esc 通常モード · h j k l 移動 · dd 削除 · yy / p コピー・貼付 · / 検索 · u 取り消し · :w 保存 · :q! 破棄</p><details id="vi-help"><summary>対応するvi操作</summary><div class="vi-help-grid"><div><strong>通常モード</strong><p>h j k l、矢印、0 ^ $、w b e、gg / G、行番号G、dd / dw / D、cc / cw / C、x / X、yy / yw / p / P、r文字、J、u / Ctrl+R、ZZ / ZQ。2ddなどの回数指定も使えます。</p></div><div><strong>編集と検索</strong><p>i I a A o Oで挿入モード、Escで通常モード。/語句 または ?語句で検索、n / Nで次・前。:set ic / noic、:set nu / nonu。基本的な正規表現に対応します。</p></div><div><strong>コマンドモード</strong><p>:w、:w ファイル、:wq、:x、:q、:q!、:e ファイル、:e!、:r ファイル、:saveas ファイル、:行番号、:%s/元/先/g、:1,3s/元/先/g、:help。viewは読み取り専用です。</p></div></div><p class="muted">viの基本操作を再現しています。ビジュアルモード、マクロ、プラグイン、外部コマンド呼び出しは対応範囲に含みません。保存先は演習内の仮想ファイルです。</p></details></dialog>
+<dialog id="doom-dialog" class="doom-dialog" aria-labelledby="doom-title" aria-describedby="doom-status">
+  <div class="doom-vignette" aria-hidden="true"></div>
+  <div class="doom-debris" aria-hidden="true"><span>FILESYSTEM CASCADE</span><pre id="doom-stream"></pre><span class="doom-signal">SIGNAL LOST / ROOT UNREACHABLE</span></div>
+  <h2 id="doom-title" class="doom-title">GAME OVER</h2>
+  <p id="doom-status" class="sr-only" role="status" aria-live="polite">演出後、選択中のケースを初期状態に戻します。</p>
+  <button type="button" id="doom-skip" class="doom-skip" autofocus>演出をスキップ <span aria-hidden="true">/ Esc</span></button>
+</dialog>
+<script>
+/*__UI_LOCALE__*/
+</script>
+<script>
+/*__I18N__*/
+</script>
+<script>
+/*__SHELL__*/
+</script>
+<script>
+/*__VI__*/
+</script>
+<script>
+/*__SL__*/
+</script>
+<script>
+/*__CASES__*/
+</script>
+<script>
+/*__EXTRA__*/
+</script>
+<script>
+/*__CONTEXT__*/
+</script>
+<script>
+/*__READING_A__*/
+</script>
+<script>
+/*__READING_B__*/
+</script>
+<script>
+/*__LOCALE_A__*/
+</script>
+<script>
+/*__LOCALE_B__*/
+</script>
+<script>
+/*__LOCALE_C__*/
+</script>
+<script>
+/*__APP__*/
+</script>
+</body>
+</html>
