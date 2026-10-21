@@ -1,0 +1,36 @@
+const {chromium,launchOptions,artifacts}=require('./helpers.js');
+const assert=require('assert/strict');const path=require('path');const {pathToFileURL}=require('url');
+(async()=>{
+ const browser=await chromium.launch(launchOptions),page=await browser.newPage({viewport:{width:1366,height:900}});
+ const errors=[],network=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url());});
+ await page.goto(pathToFileURL(path.resolve(__dirname,'../../index.html')).href);
+ const run=async c=>{await page.locator('#command-input').fill(c);await page.locator('#terminal-form').evaluate(f=>f.requestSubmit());};
+ const buffer=page.locator('#vi-buffer'),dialog=page.locator('#vi-dialog');
+ const ex=async c=>{await buffer.press(':');await page.locator('#vi-command').fill(c);await page.locator('#vi-command-form').evaluate(f=>f.requestSubmit());};
+ await run('vi /home/analyst/cancel.txt');assert.ok(await dialog.isVisible());assert.equal(await page.locator('#vi-mode').innerText(),'NORMAL');
+ await ex('q!');assert.equal(await dialog.isVisible(),false);await run('cat /home/analyst/cancel.txt');assert.equal(await page.locator('#last-exit').innerText(),'終了コード 1');
+ await run('vi /home/analyst/investigation.txt');await buffer.press('i');assert.equal(await page.locator('#vi-mode').innerText(),'INSERT');
+ await page.evaluate(()=>{window.__viEvents=[];const a=document.getElementById('vi-buffer');for(const type of ['keydown','input','compositionstart','compositionend'])a.addEventListener(type,e=>window.__viEvents.push({type,key:e.key,composing:e.isComposing,mode:document.getElementById('vi-mode').textContent}),true);});
+ await buffer.fill('first line\nsecond line');await buffer.press('Escape');if(await page.locator('#vi-mode').innerText()!=='NORMAL')console.log({viEvents:await page.evaluate(()=>window.__viEvents),errors});assert.equal(await page.locator('#vi-mode').innerText(),'NORMAL');assert.match(await page.locator('#vi-path').innerText(),/\[\+\]/);
+ await ex('q');assert.ok(await dialog.isVisible());assert.match(await page.locator('#vi-message').innerText(),/E37/);
+ await ex('set nu');assert.equal(await page.locator('#vi-lines').isVisible(),true);
+ await ex('%s/line/entry/g');assert.equal(await buffer.inputValue(),'first entry\nsecond entry');await buffer.press('u');assert.equal(await buffer.inputValue(),'first line\nsecond line');await buffer.press('Control+r');assert.equal(await buffer.inputValue(),'first entry\nsecond entry');
+ await buffer.press('/');await page.locator('#vi-command').fill('second');await page.locator('#vi-command-form').evaluate(f=>f.requestSubmit());assert.match(await page.locator('#vi-position').innerText(),/2行 1列/);
+ await ex('w');assert.equal(await buffer.inputValue(),'first entry\nsecond entry\n');assert.doesNotMatch(await page.locator('#vi-path').innerText(),/\[\+\]/);
+ await ex('q');assert.equal(await dialog.isVisible(),false);await run('cat /home/analyst/investigation.txt');assert.match(await page.locator('.terminal-block').last().innerText(),/first entry\nsecond entry/);
+ await run('view /home/analyst/investigation.txt');assert.equal(await buffer.getAttribute('readonly'),'');await buffer.press('i');assert.equal(await page.locator('#vi-mode').innerText(),'NORMAL');assert.match(await page.locator('#vi-message').innerText(),/読み取り専用/);await ex('q');
+ await run('vi /home/analyst/investigation.txt');await buffer.press('i');await buffer.fill('discarded text');await buffer.press('Escape');await page.locator('#vi-close').click();assert.ok(await dialog.isVisible());assert.match(await page.locator('#vi-message').innerText(),/E37/);await ex('q!');
+ await run('cat /home/analyst/investigation.txt');assert.match(await page.locator('.terminal-block').last().innerText(),/first entry/);
+ await run('vi /home/analyst/investigation.txt');await buffer.press('i');await buffer.fill('discarded text');await buffer.press('Escape');await ex('e!');assert.equal(await buffer.inputValue(),'first entry\nsecond entry\n');
+ await buffer.press('g');await buffer.press('g');await buffer.press('y');await buffer.press('y');await buffer.press('G');await buffer.press('p');assert.equal(await buffer.inputValue(),'first entry\nsecond entry\nfirst entry\n');
+ await buffer.press('u');assert.equal(await buffer.inputValue(),'first entry\nsecond entry\n');await buffer.press('d');await buffer.press('d');assert.equal(await buffer.inputValue(),'first entry\n');await buffer.press('u');
+ await ex('saveas /home/analyst/copy.txt');assert.match(await page.locator('#vi-path').innerText(),/copy.txt/);await ex('q');
+ await run('vi /home/analyst/copy.txt');await ex('r /home/analyst/investigation.txt');assert.match(await buffer.inputValue(),/first entry\nfirst entry\nsecond entry\nsecond entry/);await ex('q!');
+ await run('vi /home/analyst/new.txt');await buffer.press('i');await buffer.fill('調査メモ：根拠を確認する。\n2行目');await buffer.press('Escape');await ex('wq');await run('cat /home/analyst/new.txt');assert.match(await page.locator('.terminal-block').last().innerText(),/調査メモ：根拠を確認する。/);
+ await page.waitForTimeout(300);await page.reload();await run('cat /home/analyst/new.txt');assert.match(await page.locator('.terminal-block').last().innerText(),/2行目/);
+ await run('vi /home/analyst/new.txt');await ex('set nu');await page.screenshot({path:path.join(artifacts,'vi-desktop.png'),fullPage:false});
+ for(const width of [768,390,320]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`page overflow ${width}`);assert.ok(await dialog.evaluate(n=>n.scrollWidth<=n.clientWidth),`dialog overflow ${width}`);}
+ await page.setViewportSize({width:390,height:900});await page.screenshot({path:path.join(artifacts,'vi-mobile.png'),fullPage:false});await ex('q');
+ await page.locator('#case-reset').click();await page.locator('#reset-confirm').click();await run('cat /home/analyst/new.txt');assert.equal(await page.locator('#last-exit').innerText(),'終了コード 1');
+ assert.deepEqual(errors,[]);assert.deepEqual(network,[]);console.log('vi browser tests passed: modes, new/cancel, insert, dirty-close guard, search/substitute, undo/redo, line numbers, save/read/reload, readonly view, ex file commands, Unicode, reset, responsive UI and zero network.');await browser.close();
+})().catch(e=>{console.error(e);process.exit(1);});

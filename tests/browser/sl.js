@@ -1,0 +1,45 @@
+const {chromium,launchOptions,artifacts}=require('./helpers.js');
+const assert=require('assert/strict');
+const path=require('path');
+const {pathToFileURL}=require('url');
+
+(async()=>{
+  const browser=await chromium.launch(launchOptions);
+  const context=await browser.newContext({viewport:{width:1440,height:1000}}),page=await context.newPage();
+  const errors=[],requests=[];
+  const track=p=>{p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(/^https?:/.test(r.url()))requests.push(r.url());});};track(page);
+  const url=pathToFileURL(path.resolve(__dirname,'../../index.html')).href;
+  const run=async(command,p=page)=>{await p.locator('#command-input').fill(command);await p.locator('#terminal-form').evaluate(f=>f.requestSubmit());};
+  const saved=(p=page)=>p.evaluate(()=>JSON.parse(localStorage.getItem('logroom.offline.v1')).cases.ssh);
+  const controls=()=>page.locator('#app-shell button,#app-shell input,#app-shell textarea,#app-shell select').evaluateAll(a=>a.map(n=>({id:n.id,tag:n.tagName,disabled:n.disabled,readOnly:!!n.readOnly})));
+  const scenario=c=>({notes:c.notes,answers:c.answers,solved:c.solved,edits:c.edits,attackApplied:c.attackApplied,cwd:c.cwd,directories:c.directories});
+  await page.goto(url);
+  const shellResults=await page.evaluate(()=>{
+    const s=new LogLabShell({'/var/log/auth.log':'keep\n'}),results=[];
+    for(const input of ['sl','sl # a train','sl -a','sl test','sl | cat','echo x | sl','sl > /tmp/train.txt','pwd; sl','sl && pwd','echo x | xargs sl']){const shell=new LogLabShell(s.files),before=JSON.stringify(shell.files),result=shell.run(input);results.push({input,train:result.train===true,code:result.code,unchanged:JSON.stringify(shell.files)===before});}
+    return {commands:s.supportedCommands,help:s.getHelp('sl'),results};
+  });
+  assert.equal(shellResults.commands.length,52);assert.ok(shellResults.commands.includes('sl'));assert.match(shellResults.help,/Ctrl\+C/);assert.match(shellResults.help,/standalone/i);
+  for(const r of shellResults.results){assert.equal(r.train,['sl','sl # a train'].includes(r.input),'shell marker '+r.input);assert.ok(r.unchanged,'no file changes for '+r.input);if(!r.train)assert.ok(r.code>0,'rejected syntax '+r.input);}
+  await page.locator('#commands-open').click();assert.match(await page.locator('#commands-total').innerText(),/52コマンド/);await page.locator('#command-filter').fill('sl');await page.locator('.command-list-item[data-command-name="sl"]').click();assert.equal(await page.locator('#command-detail-title').innerText(),'sl');assert.match(await page.locator('#command-detail-usage').innerText(),/^sl/);await page.locator('[data-close="commands-dialog"]').click();
+  await page.locator('#tab-notes').click();await page.locator('#notes').fill('sl must preserve this note');await page.locator('#tab-tasks').click();await run("echo 'train evidence' > /home/analyst/train-keep.txt");await page.waitForTimeout(350);
+  const baseline=await saved(),beforeControls=await controls();assert.equal(await page.locator('#apply-attack').isDisabled(),false);assert.equal(await page.locator('.task-card').first().locator('input').isDisabled(),true);
+  const started=Date.now();await run('sl');await page.waitForSelector('.sl-scene');assert.match(await page.locator('.sl-status').innerText(),/Ctrl\+C/);assert.equal(await page.locator('#command-input').isDisabled(),false);assert.equal(await page.locator('#command-input').evaluate(n=>n.readOnly),true);assert.equal(await page.locator('#command-input').evaluate(n=>document.activeElement===n),true);
+  const during=await controls();assert.ok(during.filter(n=>n.id!=='command-input').every(n=>n.disabled),'all other application controls are locked');
+  const firstX=await page.locator('.sl-train').evaluate(n=>n.getBoundingClientRect().x);await page.keyboard.press('Control+c');await page.keyboard.press('Escape');assert.equal(await page.locator('.sl-scene').count(),1);
+  await page.locator('#terminal-form').evaluate(f=>{document.getElementById('command-input').value='sl';f.requestSubmit();});assert.equal(await page.locator('.sl-scene').count(),1);
+  await page.waitForTimeout(2100);assert.equal(await page.locator('.sl-scene').count(),1);const nextX=await page.locator('.sl-train').evaluate(n=>n.getBoundingClientRect().x);assert.ok(nextX<firstX-100,'train moves from right to left');await page.screenshot({path:path.join(artifacts,'sl-desktop.png')});
+  await page.locator('.sl-scene').waitFor({state:'detached',timeout:6500});assert.ok(Date.now()-started>=4700,'sl plays for approximately five seconds');assert.equal(await page.locator('#command-input').evaluate(n=>n.readOnly),false);assert.equal(await page.locator('#command-input').isDisabled(),false);assert.equal(await page.locator('#last-exit').innerText(),'終了コード 0');assert.match(await page.locator('.terminal-block').last().innerText(),/機関車が通過しました。/);
+  assert.deepEqual(await controls(),beforeControls,'restore original disabled/read-only states');await page.waitForTimeout(350);const after=await saved();assert.deepEqual(scenario(after),scenario(baseline));assert.equal(after.history.filter(c=>c==='sl').length,1,'repeated submit did not start another command');assert.equal(after.entries.at(-1).stdout,'機関車が通過しました。\n');
+  await page.reload();assert.equal(await page.locator('.sl-scene').count(),0);assert.match(await page.locator('.terminal-block').last().innerText(),/機関車が通過しました。/);await run('cat /home/analyst/train-keep.txt');assert.match(await page.locator('.terminal-block').last().innerText(),/train evidence/);
+
+  // The pre-existing disabled attack button and solved answer must remain intact.
+  await page.locator('#apply-attack').click();const answer=await page.evaluate(()=>LOG_LAB_CASES[0].tasks[0].answer);await page.locator('.task-card').first().locator('input').fill(answer);await page.locator('.task-card').first().locator('form').evaluate(f=>f.requestSubmit());await page.waitForTimeout(350);const attacked=await saved(),attackedControls=await controls();await run('sl');await page.waitForSelector('.sl-scene');await page.keyboard.press('Control+c');await page.locator('.sl-scene').waitFor({state:'detached',timeout:6500});assert.equal(await page.locator('#apply-attack').isDisabled(),true);assert.equal(await page.locator('.task-card').first().locator('input').isDisabled(),false);assert.equal(await page.locator('#progress-label').innerText(),'1 / 10 正解');assert.deepEqual(await controls(),attackedControls);await page.waitForTimeout(350);assert.deepEqual(scenario(await saved()),scenario(attacked));
+
+  // Refresh during a running train keeps history but never replays the effect.
+  await run('sl');await page.waitForSelector('.sl-scene');await page.waitForTimeout(350);await page.reload();assert.equal(await page.locator('.sl-scene').count(),0);assert.equal(await page.locator('#command-input').evaluate(n=>n.readOnly),false);assert.equal(await page.locator('#apply-attack').isDisabled(),true);assert.ok((await saved()).history.filter(c=>c==='sl').length>=3);assert.equal((await saved()).notes,'sl must preserve this note');
+  await run('rm -rf /');await page.waitForSelector('#doom-dialog[open]');await page.locator('#doom-skip').click();await page.waitForFunction(()=>!document.getElementById('doom-dialog').open);assert.equal(await page.locator('#scenario-state').innerText(),'正常ログ');
+
+  const mobile=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'}),mp=await mobile.newPage();track(mp);await mp.goto(url);const mobileStarted=Date.now();await run('sl',mp);await mp.waitForSelector('.sl-scene');assert.equal(await mp.locator('.sl-scene').evaluate(n=>n.classList.contains('sl-still')),true);const mx=await mp.locator('.sl-train').evaluate(n=>n.getBoundingClientRect().x);await mp.keyboard.press('Control+c');await mp.keyboard.press('Escape');await mp.waitForTimeout(1200);assert.equal(await mp.locator('.sl-scene').count(),1);assert.equal(await mp.locator('.sl-train').evaluate(n=>n.getBoundingClientRect().x),mx);assert.ok(await mp.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile page fits viewport');assert.ok(await mp.locator('.sl-scene').evaluate(n=>n.getBoundingClientRect().right<=innerWidth));await mp.screenshot({path:path.join(artifacts,'sl-mobile.png')});await mp.locator('.sl-scene').waitFor({state:'detached',timeout:6500});assert.ok(Date.now()-mobileStarted>=4700);assert.equal(await mp.locator('#command-input').evaluate(n=>n.readOnly),false);assert.equal(await mp.locator('#last-exit').innerText(),'終了コード 0');assert.equal(await mp.locator('#apply-attack').isDisabled(),false);
+  assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);console.log('sl browser tests passed: 52-command help, standalone marker and rejected compound syntax, right-to-left five-second animation, Ctrl+C/Escape/repeated-submit resistance, full control restoration, preserved baseline/attacked progress/notes/files, completed and in-flight reload, rm Easter egg compatibility, stationary reduced-motion/mobile, zero network.');await browser.close();
+})().catch(e=>{console.error(e);process.exit(1);});
