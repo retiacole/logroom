@@ -1,0 +1,45 @@
+name: 不具合の報告
+description: コマンド、演習、表示、保存の不具合を報告する
+title: '[不具合] '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        再現できる手順があると調査しやすくなります。Logroomの演習ログを使用してください。実際の個人情報・認証情報・社内ログは貼らないでください。
+  - type: input
+    id: browser
+    attributes:
+      label: OS・ブラウザとバージョン
+      placeholder: Windows 11 / Edge 例：xxx
+    validations:
+      required: true
+  - type: dropdown
+    id: delivery
+    attributes:
+      label: 開き方
+      options:
+        - GitHub Pages
+        - ダウンロードしたHTML
+        - ローカル開発サーバー
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: ケース名、入力コマンド、操作の順番を記載してください。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した結果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の結果
+      description: 可能なら画面、エラー文、コマンドの終了コードを添えてください。
+    validations:
+      required: true
