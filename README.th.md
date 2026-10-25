@@ -74,3 +74,7 @@ npm test
 ## สัญญาอนุญาต
 
 [MIT License](LICENSE) ใช้ แก้ไข และแจกจ่ายต่อได้โดยคงข้อความลิขสิทธิ์และสัญญาอนุญาตไว้ เอกสารอ้างอิงภายนอกเป็นสิทธิ์ของเจ้าของแต่ละรายและไม่อยู่ภายใต้สัญญาอนุญาตนี้
+
+<p align="center">
+  <img src="docs/images/logroom-ending.png" width="100%" alt="The room series party sharing a meal at a tavern">
+</p>

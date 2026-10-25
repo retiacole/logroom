@@ -115,3 +115,7 @@ dist/      配信・ダウンロード用HTML
 ## ライセンス
 
 [MIT License](LICENSE)。著作権表示とライセンス文を残したうえで、利用・改変・再配布できます。外部の参考資料はそれぞれの権利者に帰属し、このライセンスの対象には含みません。`sl`の図柄はLogroom用の独自の線画で、元のslプログラムは同梱していません。
+
+<p align="center">
+  <img src="docs/images/logroom-ending.png" width="100%" alt="酒場で食事を楽しむroomシリーズの仲間たち">
+</p>

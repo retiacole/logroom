@@ -26,10 +26,6 @@ const modules = {
 
 function render() {
   let html = fs.readFileSync(path.join(source, 'ui.html'), 'utf8');
-  const imageMarker = '__GUIDE_ENDING_IMAGE__';
-  if (html.split(imageMarker).length !== 2) throw new Error('Expected one guide illustration marker');
-  const guideImage = fs.readFileSync(path.join(source, 'assets/guide-ending.png'));
-  html = html.replace(imageMarker, () => 'data:image/png;base64,' + guideImage.toString('base64'));
   for (const [token, filename] of Object.entries(modules)) {
     const marker = `/*__${token}__*/`;
     if (html.split(marker).length !== 2) {

@@ -74,3 +74,7 @@ The build bundles `src/` into the standalone `index.html`, `dist/index.html`, an
 ## License
 
 [MIT License](LICENSE). Preserve the copyright and license notices when using, modifying, or redistributing the project. External reference documents belong to their respective rights holders and are not covered by this license.
+
+<p align="center">
+  <img src="docs/images/logroom-ending.png" width="100%" alt="The room series party sharing a meal at a tavern">
+</p>
