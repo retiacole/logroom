@@ -1,6 +1,6 @@
 {
   "name": "logroom",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "ブラウザだけで使える、Linuxコマンドによるログ分析演習室",
   "engines": {

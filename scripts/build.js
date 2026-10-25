@@ -20,6 +20,7 @@ const modules = {
   LOCALE_A: 'locales/cases-a.js',
   LOCALE_B: 'locales/cases-b.js',
   LOCALE_C: 'locales/cases-c.js',
+  PRACTICE: 'practice.js',
   APP: 'app.js'
 };
 

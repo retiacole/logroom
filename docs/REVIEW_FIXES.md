@@ -1,0 +1,36 @@
+# 実機との差分レビューへの対応
+
+v0.2.0に含まれる、実機との差分レビューへの対応をまとめています。
+
+| 指摘 | 対応 |
+| --- | --- |
+| syslog日時・随伴ログ | SSHを従来形式に変更。年・TZを採取条件に明記し、PAM・invalid user・preauth行を追加。8月9日の履歴で1桁日の空白を確認できます。 |
+| grepの誤学習 | `\d` / `\D`を明示エラーにして文字クラスを案内。複雑な反復への制限は維持し、IPv4の代替例を表示。 |
+| 権限とsudo | auth.logをsyslog:adm・0640で扱い、入門はadm所属、実践はsudoが必要です。パイプ、リダイレクト、権限の有効範囲も検証しました。 |
+| 過去ログと圧縮 | 当日とは異なるauth.log.1 / auth.log.2.gzを追加。zcat / zgrep / zlessに対応。圧縮状態は名前変更後も保持します。 |
+| ls | 9フィールドの詳細表示、データ由来のmtime、`-t` / `--sort=time`、複数ファイル間の空行を修正。mtimeは実際の書込み時刻ではなく演習用推定です。 |
+| ログの自然さ | SSHの不自然なrequest_idを削除。sudo表記、302の応答サイズ、通常ログ間隔、送信量のばらつきを改善。DNS/proxyの正規化形式と単位を明記。 |
+| リクエスト照合 | Nginxのカスタムlog_formatとアプリへの同一ID引渡しが必要であることを追記。WebケースはJSTとUTCを照合します。 |
+| シェル互換 | 引用を考慮した`~`、順序を考慮したstderrリダイレクト、GNUに沿ったエラー文、whoami / id / hostname / man / whichを追加。 |
+| awk・sort | awkの文字列連結、substr / split / printf / if / for / 複数ブロック、複数sortキー・月名順を追加。配列順には依存せず、必要ならsortします。 |
+| ルート保護・表示 | `rm -rf /`は拒否。演出は明示した`--no-preserve-root`のみ。ホスト名とホームの`~`表示も修正。 |
+| 日本語の入力 | 全角英数字をNFKCで正規化し、回答末尾の句読点を許容。 |
+| 調査の実践 | 実践モードは最初から事象を含むログを読み込み、正常コピーを配りません。SSHには2万行を追加。設定ごとに進捗を保存します。 |
+| ヒント・成果物 | 完成コマンドのヒントは入門向けに維持し、ログを読まずに回答した場合は根拠確認を促します。追加のtimeline.txt実技はファイル内容を検査します。 |
+| 再挑戦・実機移行 | シードで文書用IPを変え、回答・根拠・3言語の説明を一致させます。tar出力は実際のgzip履歴と作成ファイルを含み、WSL/Linuxで再練習できます。 |
+
+既存の10ケース・104問と「観測事実と推測を分ける」解説を維持しました。追加実技は既存のケース完了条件を変更しません。新しい説明・画面文言も日本語・英語・タイ語を揃えています。
+
+シードで変更するのはIPです。件数・時刻のランダム化と、rsyslogの反復省略行を展開して数える独立設問は今回追加していません。実機のログ形式・保存先・権限はディストリビューションと設定によって異なります。この教材では前提を明示しています。
+
+完全なシェルやawkではありません。外部プロセス・任意のスクリプトは実行せず、ループ・出力・正規表現に制限があります。圧縮ログは仮想FS内では展開済みテキストと圧縮属性で保持し、ダウンロード時にgzip化します。同じファイルに独立した複数の出力を開くリダイレクトは拒否し、共有する場合は`> file 2>&1`を案内します。
+
+検証コマンドは`npm test`（12スイート）と`npm run test:browser`（6スイート）です。回答・証拠行、3言語の翻訳、権限とstderr順序、2万行集計、設定別保存、ファイル提出、tar/gzip、モバイル表示、演習中の外部通信なしを確認します。awk/sortはホストのツールとの43ケース比較でも出力を照合しました。
+
+前提の確認に使った一次資料：
+
+- [GNU grepの特別なバックスラッシュ表現](https://www.gnu.org/software/grep/manual/html_node/Special-Backslash-Expressions.html)
+- [rsyslogのテンプレート](https://docs.rsyslog.com/doc/configuration/templates.html)
+- [Nginxのアクセスログ形式](https://nginx.org/en/docs/http/ngx_http_log_module.html)
+- [Nginxのrequest_id](https://nginx.org/en/docs/http/ngx_http_core_module.html#var_request_id)
+- [Nginxのproxy_set_header](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_set_header)

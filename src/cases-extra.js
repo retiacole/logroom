@@ -14,9 +14,9 @@
   const logs=s=>({[A]:txt(s.a),[T]:txt(s.t),[J]:txt(s.j),[s.path]:txt(s.x)});
   const line=(s,at,rest)=>s.x.push(at+' '+s.host+' '+rest);
   const event=(s,at,ip,url,status,bytes,id,fields,method)=>{s.a.push(http(at,ip,url,status,bytes,id,method));pair(s,at,{...fields,src_ip:ip,request_id:id});};
-  const readme=(title,paths,before)=>txt([title,'','組織・人物・通信・ログはすべて架空です。実行や外部通信は行いません。','日付は2026年8月12日、全時刻はUTCです。IPとドメインは文書・テスト用です。',before?'現在は正常状態です。画面の攻撃ボタンで合成イベントを加えた状態に切り替えます。':'攻撃後の静的ログです。HTTP結果だけで成功と決めず、別の監査記録を照合してください。','audit.logとaudit.jsonlは同じイベントのテキスト表示とJSON Lines表示です。','他の監査・通信ログは別の観測記録です。すべて教材用に正規化されています。','正常ログの保存先は /baseline 以下の同じ絶対パスです。diffで比較できます。','','調査対象:',...paths,'','使える操作はhelpで確認できます。']);
+  const readme=(title,paths,before)=>txt([title,'','組織・人物・通信・ログはすべて架空です。実行や外部通信は行いません。','日付は2026年8月12日、全時刻はUTCです。IPとドメインは文書・テスト用です。',before?'現在は正常状態です。画面の攻撃ボタンで合成イベントを加えた状態に切り替えます。':'攻撃後の静的ログです。HTTP結果だけで成功と決めず、別の監査記録を照合してください。','audit.logとaudit.jsonlは同じイベントのテキスト表示とJSON Lines表示です。','他の監査・通信ログは別の観測記録です。すべて教材用に正規化されています。','正常ログの保存先は /baseline 以下の同じ絶対パスです。diffで比較できます。','Nginxはcombinedにrequest_idを追加したカスタムlog_formatです。標準combinedにはrequest_idがなく、実運用では$request_idの記録、proxy_set_header X-Request-ID $request_id等によるアプリへの引き継ぎ、アプリ監査への記録が必要です。教材のreq-…は可読な固定IDで、Nginxの32桁の16進IDとは表記が異なります。','','調査対象:',...paths,'','使える操作はhelpで確認できます。']);
   const build=(s,title,summary,baseline,attackLabel,briefing)=>{
-    const full=logs(s),paths=Object.keys(full),c={id:s.id,title,shortTitle:title,level:'中級',minutes:30,summary,briefing:['2026年8月12日。全時刻はUTCです。全データは静的な架空ログです。',...briefing],files:{...full,'/etc/hostname':s.host+'\n','/home/analyst/README.txt':readme(title,paths,false)},baselineFiles:{...baseline,'/etc/hostname':s.host+'\n','/home/analyst/README.txt':readme(title,paths,true)},attack:{label:attackLabel,summary:'調査対象の合成イベントを追加しました。'},logPaths:paths,tasks:[],walkthrough:[],initialCommand:'cat /home/analyst/README.txt'};
+    const full=logs(s),paths=Object.keys(full),c={id:s.id,title,shortTitle:title,level:'中級',minutes:30,summary,briefing:['2026年8月12日。全時刻はUTCです。全データは静的な架空ログです。',...briefing],files:{...full,'/etc/hostname':s.host+'\n','/home/analyst/README.txt':readme(title,paths,false)},baselineFiles:{...baseline,'/etc/hostname':s.host+'\n','/home/analyst/README.txt':readme(title,paths,true)},attack:{label:attackLabel,summary:'調査対象の合成イベントを追加しました。'},logPaths:paths,tasks:[],walkthrough:[],initialCommand:'cat /home/analyst/README.txt',clockNote:'時刻はUTC（Z / +0000）。日本時間は+9時間。'};
     c._e=(p,needle)=>{const a=c.files[p].trimEnd().split('\n'),i=a.findIndex(x=>x.includes(needle));if(i<0)throw Error('missing evidence '+s.id+':'+needle);return{path:p,line:i+1,quote:a[i]};};return c;
   };
   const q=(c,id,label,prompt,answer,explanation,refs,first,second,alts=[])=>{
@@ -58,11 +58,11 @@
   const ws=base('webauth','portal-02',15,W,(at,rid,i)=>at+' portal-02 session_audit event=validate session_id=sess-normal-'+i+' actor=staff-a result=success request_id='+rid);
   const wb=logs(ws),wi='203.0.113.142';
   for(let i=0;i<4;i++)event(ws,iso(15,6,i*10),wi,'/login',401,88,'req-wa-'+(501+i),{action:'login',result:'failure',actor:i<2?'admin':'report-viewer',reason:'invalid_password'},'POST');
-  event(ws,iso(15,7,2),wi,'/login',302,0,'req-wa-505',{action:'login',result:'success',actor:'report-viewer',session_id:'sess-lab-42',mfa_used:false},'POST');
+  event(ws,iso(15,7,2),wi,'/login',302,145,'req-wa-505',{action:'login',result:'success',actor:'report-viewer',session_id:'sess-lab-42',mfa_used:false},'POST');
   line(ws,iso(15,7,2),'session_audit event=issue session_id=sess-lab-42 actor=report-viewer client_ip=203.0.113.142 result=success request_id=req-wa-505');
   event(ws,iso(15,8,4),wi,'/reports/private?period=august',200,4920,'req-wa-506',{action:'report_view',result:'success',actor:'report-viewer',session_id:'sess-lab-42',resource:'/reports/private',rows:18});
   line(ws,iso(15,8,4),'session_audit event=validate session_id=sess-lab-42 actor=report-viewer client_ip=203.0.113.142 result=success request_id=req-wa-506');
-  event(ws,iso(15,9,20),wi,'/logout',302,0,'req-wa-507',{action:'logout',result:'success',actor:'report-viewer',session_id:'sess-lab-42',revoked:true},'POST');
+  event(ws,iso(15,9,20),wi,'/logout',302,145,'req-wa-507',{action:'logout',result:'success',actor:'report-viewer',session_id:'sess-lab-42',revoked:true},'POST');
   line(ws,iso(15,9,20),'session_audit event=revoke session_id=sess-lab-42 actor=report-viewer result=success request_id=req-wa-507');
   const wc=build(ws,'Web認証試行とセッション追跡','認証失敗からセッション発行、利用、失効までを追います。',wb,'Web認証の異常を追加',['短時間のパスワード試行と、その後のセッション利用が調査対象です。認証成功だけで全操作を推測しないでください。','MFAの値はこのログインで使用したかを示し、アカウント全体の設定を示すものではありません。']);
   const wq=id=>"jq -r 'select(.request_id == \""+id+"\") | ";
@@ -85,7 +85,7 @@
   const sb=logs(ss),si='203.0.113.143';
   event(ss,iso(16,5,0),si,'/preview?url=http%3A%2F%2Fconfig.internal.test%2Fadmin',400,80,'req-ssrf-401',{action:'url_fetch',result:'denied',reason:'destination_policy',initial_url:'http://config.internal.test/admin',bytes:0});
   event(ss,iso(16,6,5),si,'/preview?url=http%3A%2F%2Fpreview.vendor.example%2Fredirect',200,512,'req-ssrf-402',{action:'url_fetch',result:'success',initial_url:'http://preview.vendor.example/redirect',final_url:'http://config.internal.test/status',redirects:1,bytes:512});
-  line(ss,iso(16,6,4),'egress_audit src=192.0.2.60 dst=198.51.100.41 host=preview.vendor.example status=302 bytes=0 result=redirect location=http://config.internal.test/status request_id=req-ssrf-402');
+  line(ss,iso(16,6,4),'egress_audit src=192.0.2.60 dst=198.51.100.41 host=preview.vendor.example status=302 bytes=145 result=redirect location=http://config.internal.test/status request_id=req-ssrf-402');
   line(ss,iso(16,6,5),'egress_audit src=192.0.2.60 dst=192.0.2.80 host=config.internal.test status=200 bytes=512 result=success request_id=req-ssrf-402');
   event(ss,iso(16,7,8),si,'/preview?url=http%3A%2F%2Fstatus.vendor.example%2Fhealth',200,64,'req-ssrf-403',{action:'url_fetch',result:'error',reason:'timeout',initial_url:'http://status.vendor.example/health',bytes:0});
   line(ss,iso(16,7,8),'egress_audit src=192.0.2.60 dst=198.51.100.42 host=status.vendor.example status=none bytes=0 result=timeout request_id=req-ssrf-403');
@@ -133,7 +133,7 @@
 
   // Deliberate removal is visible locally; the independent collector retains requests.
   const F='/var/log/auth.log', C='/var/log/collector/nginx-access.log';
-  const ts=base('tamper','edge-02',18,F,(at,rid,i)=>at+' edge-02 sshd['+(8000+i)+']: Accepted publickey for ops from 192.0.2.10 port '+(55000+i)+' ssh2 request_id='+rid);
+  const ts=base('tamper','edge-02',18,F,(at,rid,i)=>at+' edge-02 sshd['+(8000+i)+']: Accepted publickey for ops from 192.0.2.10 port '+(55000+i)+' ssh2: ED25519 SHA256:FICTIONALTRAININGKEY');
   const normalAccess=ts.a.slice(),activeBefore=txt(normalAccess.slice(-20));
   const tb=logs(ts);tb[A]=activeBefore;tb[C]=txt(normalAccess);
   ts.x.push(iso(18,4,0)+' edge-02 sshd[9010]: Accepted publickey for maint from 192.0.2.77 port 56100 ssh2');

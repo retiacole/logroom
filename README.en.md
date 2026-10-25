@@ -32,7 +32,8 @@ The exercises work offline. If organizational settings block local HTML files, t
 ## What you can practice
 
 - **10 cases and 104 questions**, including SSH authentication, SQL injection, command injection, path traversal, SSRF, uploads, and log tampering.
-- **52 commands**, with common options, pipes, virtual-file output, JSON extraction, and basic `vi` editing. Use **Commands** or `help command` to check the supported syntax.
+- **Practice mode** adds sudo, rotated logs, over 20,000 SSH log lines, seeded IP variants, a timeline file exercise and tar exports with real gzip history. Progress is stored per mode and seed.
+- **61 commands**, with common options, pipes, virtual-file output, JSON extraction, and basic `vi` editing. Use **Commands** or `help command` to check the supported syntax.
 - Context and server-topology descriptions, progressive hints, supporting log lines, and investigation walkthroughs.
 - Detailed debriefs after every question in a case is correct: technical knowledge, observed attack stages, mitigations, related historical incidents, and primary-source links.
 - Resizable terminal, a collapsible exercise panel, notes, and note export.
@@ -41,11 +42,11 @@ The language selector translates the interface, all questions, hints, context de
 
 ## Simulator scope and progress
 
-Logroom is a **log-analysis simulator**, not an operating system. No real servers, attacks, SQL, OS commands, or network connections run. The terminal operates on virtual files; the logs, addresses, and accounts are fictional. Commands implement a learning subset, and unsupported syntax returns an error. All log timestamps are UTC.
+Logroom is a **log-analysis simulator**, not an operating system. No real servers, attacks, SQL, OS commands, or network connections run. The terminal operates on virtual files; the logs, addresses, and accounts are fictional. Commands implement a learning subset, and unsupported syntax returns an error. The SSH case uses traditional syslog (year and timezone supplied by the exercise context); the Web case combines nginx JST timestamps with UTC application logs. Check each case README.
 
 Progress, answers, notes, history, and virtual-file edits are saved in the browser’s **localStorage**, not cookies. The same progress is shared across all three interface languages in the same browser and origin. Changing browser, website, or local HTML location does not automatically transfer progress. Private browsing, storage restrictions, or clearing browser data can remove it. Export important notes; note export is not a restorable full-progress backup.
 
-**Reset to normal** clears the selected case’s answers, notes, history, and virtual-file changes. Other cases are preserved. The virtual `rm -rf /` command also resets the selected case after a GAME OVER animation. `sl` displays a short train animation that cannot be stopped with Ctrl+C.
+**Reset to normal** clears the selected case’s answers, notes, history, and virtual-file changes. Other cases are preserved. The virtual `rm -rf --no-preserve-root /` command also resets the selected case after a GAME OVER animation. `sl` displays a short train animation that cannot be stopped with Ctrl+C.
 
 ## Documentation and development
 

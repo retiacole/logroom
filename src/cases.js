@@ -11,12 +11,12 @@
     if (index < 0) throw new Error('Missing training evidence: ' + fragment);
     return { path, line: index + 1, quote: lines[index] };
   };
-  const readme = (title, incident, paths) => textFile([
+  const readme = (title, incident, paths, clock = '日時: 2026年8月12日。全ログのタイムゾーンはUTCです（日本時間は+9時間）。') => textFile([
     title,
     '',
     'この演習の組織、人物、アカウント、通信、ログはすべて架空です。',
     'IPアドレスには文書用の範囲、ドメインには .test / .example を使っています。',
-    '日時: 2026年8月12日。全ログのタイムゾーンはUTCです（日本時間は+9時間）。',
+    clock,
     '',
     incident,
     '',
@@ -33,9 +33,9 @@
   // Case 1: standard OpenSSH / sudo shapes, including invalid-user variants.
   const authRecords = [];
   let authOrder = 0;
-  const auth = (seconds, message) => authRecords.push({ at: stamp(seconds), order: authOrder++, line: stamp(seconds) + ' edge-01 ' + message });
-  for (let i = 0; i < 45; i++) {
-    const at = 8 * 3600 + 55 * 60 + i * 40;
+  const auth = (seconds, message) => authRecords.push({ at: stamp(seconds), order: authOrder++, line: 'Aug 12 ' + stamp(seconds).slice(11, 19) + ' edge-01 ' + message });
+  for (let i = 0; i < 30; i++) {
+    const at = 8 * 3600 + 55 * 60 + i * 60;
     auth(at, 'CRON[' + (1000 + i) + ']: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)');
     auth(at + 1, 'CRON[' + (1000 + i) + ']: pam_unix(cron:session): session closed for user root');
   }
@@ -43,23 +43,33 @@
     const at = 9 * 3600 + i * 170;
     auth(at, 'sshd[' + (1800 + i) + ']: Accepted publickey for ops from 192.0.2.10 port ' + (52000 + i) + ' ssh2: ED25519 SHA256:FICTIONALTRAININGKEY');
     auth(at + 2, 'sshd[' + (1800 + i) + ']: pam_unix(sshd:session): session opened for user ops(uid=1001) by (uid=0)');
+    auth(at + 39 + i % 4 * 7, 'sshd[' + (1800 + i) + ']: pam_unix(sshd:session): session closed for user ops');
   }
-  for (let i = 0; i < 12; i++) auth(9 * 3600 + 2 * 60 + i * 41, 'sshd[' + (2200 + i) + ']: Failed password for invalid user guest from 203.0.113.44 port ' + (43000 + i) + ' ssh2');
-  for (let i = 0; i < 7; i++) auth(9 * 3600 + 4 * 60 + i * 73, 'sshd[' + (2300 + i) + ']: Failed password for ops from 198.51.100.25 port ' + (44000 + i) + ' ssh2');
+  const failedAuth = (at, pid, account, source, port) => {
+    const invalid = account.startsWith('invalid user '), user = account.replace('invalid user ', '');
+    const prefix = 'sshd[' + pid + ']: ';
+    if (invalid) auth(at - 3, prefix + 'Invalid user ' + user + ' from ' + source + ' port ' + port);
+    auth(at - 2, prefix + 'pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=' + source + (invalid ? '' : ' user=' + user));
+    auth(at, prefix + 'Failed password for ' + account + ' from ' + source + ' port ' + port + ' ssh2');
+    auth(at + 1, prefix + 'Connection closed by ' + (invalid ? 'invalid user ' : 'authenticating user ') + user + ' ' + source + ' port ' + port + ' [preauth]');
+  };
+  for (let i = 0; i < 12; i++) failedAuth(9 * 3600 + 2 * 60 + i * 41 + i % 3, 2200 + i, 'invalid user guest', '203.0.113.44', 43000 + i);
+  for (let i = 0; i < 7; i++) failedAuth(9 * 3600 + 4 * 60 + i * 73 + i % 4, 2300 + i, 'ops', '198.51.100.25', 44000 + i);
   for (let i = 0; i < 60; i++) {
     const account = i < 30 ? 'invalid user admin' : i < 50 ? 'root' : 'deploy';
-    auth(9 * 3600 + 10 * 60 + i * 8, 'sshd[' + (3000 + i) + ']: Failed password for ' + account + ' from 198.51.100.73 port ' + (45000 + i) + ' ssh2');
+    const jitter = i === 0 || i === 59 ? 0 : [0, 2, -1, 1, -2][i % 5];
+    failedAuth(9 * 3600 + 10 * 60 + i * 8 + jitter, 3000 + i, account, '198.51.100.73', 45000 + i);
   }
   auth(9 * 3600 + 18 * 60 + 42, 'sshd[4100]: Accepted password for deploy from 198.51.100.73 port 45100 ssh2');
   auth(9 * 3600 + 18 * 60 + 43, 'sshd[4100]: pam_unix(sshd:session): session opened for user deploy(uid=1002) by (uid=0)');
-  auth(9 * 3600 + 19 * 60 + 4, 'sudo[4110]: deploy : TTY=pts/1 ; PWD=/home/deploy ; USER=root ; COMMAND=/usr/bin/id');
+  auth(9 * 3600 + 19 * 60 + 4, 'sudo: deploy : TTY=pts/1 ; PWD=/home/deploy ; USER=root ; COMMAND=/usr/bin/id');
   auth(9 * 3600 + 19 * 60 + 4, 'sudo[4110]: pam_unix(sudo:session): session opened for user root(uid=0) by deploy(uid=1002)');
   auth(9 * 3600 + 19 * 60 + 5, 'sudo[4110]: pam_unix(sudo:session): session closed for user root');
-  auth(9 * 3600 + 20 * 60 + 11, 'sudo[4117]: deploy : TTY=pts/1 ; PWD=/home/deploy ; USER=root ; COMMAND=/usr/bin/systemctl restart nginx');
+  auth(9 * 3600 + 20 * 60 + 11, 'sudo: deploy : TTY=pts/1 ; PWD=/home/deploy ; USER=root ; COMMAND=/usr/bin/systemctl restart nginx');
   auth(9 * 3600 + 20 * 60 + 11, 'sudo[4117]: pam_unix(sudo:session): session opened for user root(uid=0) by deploy(uid=1002)');
   auth(9 * 3600 + 20 * 60 + 13, 'sudo[4117]: pam_unix(sudo:session): session closed for user root');
   auth(9 * 3600 + 22 * 60 + 31, 'sshd[4100]: pam_unix(sshd:session): session closed for user deploy');
-  auth(9 * 3600 + 5 * 60, 'sudo[2100]: ops : TTY=pts/0 ; PWD=/home/ops ; USER=root ; COMMAND=/usr/bin/journalctl -u nginx');
+  auth(9 * 3600 + 5 * 60, 'sudo: ops : TTY=pts/0 ; PWD=/home/ops ; USER=root ; COMMAND=/usr/bin/journalctl -u nginx');
   auth(9 * 3600 + 26 * 60, 'sshd[4500]: Accepted publickey for backup from 192.0.2.12 port 53100 ssh2: ED25519 SHA256:FICTIONALBACKUPKEY');
   const sshFiles = {
     '/home/analyst/README.txt': readme('ケース1: SSH認証の異常とsudoの追跡', '監視担当が短時間のSSH認証失敗増加を報告しました。認証に成功した記録と、その後の特権コマンドを調べます。', ['/var/log/auth.log']),
@@ -75,16 +85,16 @@
       '認証成功の記録とsudoの記録を分けて確認してください。sudoの記録だけではサービスの正常な再起動完了までは分かりません。',
     ], files: sshFiles,
     tasks: [
-      { id: 'source', label: '認証失敗の送信元', prompt: 'SSHの「Failed password」が最も多い送信元IPは？', placeholder: '例: 198.51.100.10', accepted: ['198.51.100.73'], answer: '198.51.100.73', explanation: 'Failed passwordの行から送信元を取り出して集計すると、このIPが60件で最多です。invalid userの有無で列数が変わるため、末尾からIPの位置を数えると揃います。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'sshd[3000]:'), evidence(sshFiles, '/var/log/auth.log', 'sshd[3059]:')], hints: [{ text: 'まず認証失敗だけを抽出します。', command: "grep 'Failed password' /var/log/auth.log" }, { text: 'IPを抽出し、同じ値を数えて件数の多い順に並べます。', command: "grep 'Failed password' /var/log/auth.log | awk '{print $(NF-3)}' | sort | uniq -c | sort -nr" }] },
-      { id: 'count', label: '失敗回数', prompt: '最多の送信元IPによる「Failed password」は何件？', placeholder: '件数を数字で入力', accepted: ['60', '60件'], answer: '60', explanation: '対象IPとFailed passwordの両方に一致する行は60行です。認証成功やセッション開始の行を混ぜないことが集計のポイントです。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'sshd[3000]:'), evidence(sshFiles, '/var/log/auth.log', 'sshd[3059]:')], hints: [{ text: '認証失敗で絞ってから、前問で得たIPでさらに絞ります。' }, { text: 'wc -lで一致行の数を確認できます。', command: "grep 'Failed password' /var/log/auth.log | grep '198.51.100.73' | wc -l" }] },
-      { id: 'account', label: '認証に成功したアカウント', prompt: 'その送信元からパスワード認証に成功したアカウント名は？', placeholder: 'アカウント名', accepted: ['deploy'], answer: 'deploy', explanation: '同じIPからdeployへのAccepted passwordが記録されています。失敗したadminやrootとは区別して読みます。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'Accepted password for deploy')], hints: [{ text: '認証に成功した行はAcceptedで始まる認証結果を含みます。', command: "grep 'Accepted' /var/log/auth.log" }, { text: '前問のIPに絞り、forの後のアカウント名を確認します。', command: "grep '198.51.100.73' /var/log/auth.log | grep 'Accepted'" }] },
-      { id: 'login-time', label: '成功した時刻', prompt: 'このパスワード認証が成功した時刻は？（UTC、HH:MM:SS）', placeholder: 'HH:MM:SS', accepted: ['09:18:42', '09:18:42 UTC', '2026-08-12T09:18:42Z', '2026-08-12 09:18:42'], answer: '09:18:42', explanation: 'Accepted passwordの行の先頭は2026-08-12T09:18:42Zです。ZはUTCを表します。直後のセッション開始時刻09:18:43とは1秒違います。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'Accepted password for deploy')], hints: [{ text: 'Accepted passwordの行の先頭にUTCの日時があります。', command: "grep 'Accepted password' /var/log/auth.log" }] },
+      { id: 'source', label: '認証失敗の送信元', prompt: 'SSHの「Failed password」が最も多い送信元IPは？', placeholder: '例: 198.51.100.10', accepted: ['198.51.100.73'], answer: '198.51.100.73', explanation: 'Failed passwordの行から送信元を取り出して集計すると、このIPが60件で最多です。invalid userの有無で列数が変わるため、末尾からIPの位置を数えると揃います。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'Failed password for invalid user admin from 198.51.100.73 port 45000'), evidence(sshFiles, '/var/log/auth.log', 'Failed password for deploy from 198.51.100.73 port 45059')], hints: [{ text: 'まず認証失敗だけを抽出します。', command: "grep 'Failed password' /var/log/auth.log" }, { text: 'IPを抽出し、同じ値を数えて件数の多い順に並べます。', command: "grep 'Failed password' /var/log/auth.log | awk '{print $(NF-3)}' | sort | uniq -c | sort -nr" }] },
+      { id: 'count', label: '失敗回数', prompt: '最多の送信元IPによる「Failed password」は何件？', placeholder: '件数を数字で入力', accepted: ['60', '60件'], answer: '60', explanation: '対象IPとFailed passwordの両方に一致する行は60行です。認証成功やセッション開始の行を混ぜないことが集計のポイントです。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'Failed password for invalid user admin from 198.51.100.73 port 45000'), evidence(sshFiles, '/var/log/auth.log', 'Failed password for deploy from 198.51.100.73 port 45059')], hints: [{ text: '認証失敗で絞ってから、前問で得たIPでさらに絞ります。' }, { text: 'wc -lで一致行の数を確認できます。', command: "grep 'Failed password' /var/log/auth.log | grep -F 'from 198.51.100.73 port ' | wc -l" }] },
+      { id: 'account', label: '認証に成功したアカウント', prompt: 'その送信元からパスワード認証に成功したアカウント名は？', placeholder: 'アカウント名', accepted: ['deploy'], answer: 'deploy', explanation: '同じIPからdeployへのAccepted passwordが記録されています。失敗したadminやrootとは区別して読みます。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'Accepted password for deploy')], hints: [{ text: '認証に成功した行はAcceptedで始まる認証結果を含みます。', command: "grep 'Accepted' /var/log/auth.log" }, { text: '前問のIPに絞り、forの後のアカウント名を確認します。', command: "grep -F 'from 198.51.100.73 port ' /var/log/auth.log | grep 'Accepted'" }] },
+      { id: 'login-time', label: '成功した時刻', prompt: 'このパスワード認証が成功した時刻は？（UTC、HH:MM:SS）', placeholder: 'HH:MM:SS', accepted: ['09:18:42', '09:18:42 UTC', '2026-08-12T09:18:42Z', '2026-08-12 09:18:42'], answer: '09:18:42', explanation: 'Accepted passwordの行の先頭はAug 12 09:18:42です。従来型syslogの時刻には年とタイムゾーンがないため、READMEの2026年・UTCという採取条件で補います。直後のセッション開始時刻09:18:43とは1秒違います。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'Accepted password for deploy')], hints: [{ text: '先頭の月・日・時刻を読み、年とタイムゾーンはREADMEで確認します。', command: "grep 'Accepted password' /var/log/auth.log" }] },
       { id: 'sudo', label: '後続の特権コマンド', prompt: 'deployがsudoで実行した、nginxの再起動を指示するコマンド全文は？', placeholder: '/usr/bin/…', accepted: ['/usr/bin/systemctl restart nginx', 'systemctl restart nginx', 'sudo /usr/bin/systemctl restart nginx'], answer: '/usr/bin/systemctl restart nginx', explanation: 'deployのsudoログにUSER=rootとCOMMAND=/usr/bin/systemctl restart nginxがあります。これはroot権限でのコマンド実行記録で、再起動が正常に完了したかは別のサービスログで確認する必要があります。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'COMMAND=/usr/bin/systemctl restart nginx')], hints: [{ text: 'sudoとdeployの両方を含む行に絞ります。', command: "grep 'sudo' /var/log/auth.log | grep 'deploy'" }, { text: 'COMMAND=の後が実行したコマンドです。', command: "grep 'COMMAND=' /var/log/auth.log | grep 'deploy'" }] },
     ],
     walkthrough: [
-      { title: '調査対象を読む', command: 'cat /home/analyst/README.txt', explanation: '時刻はすべてUTC。まずログの範囲と演習の前提を確認します。' },
+      { title: '調査対象を読む', command: 'cat /home/analyst/README.txt', explanation: 'syslog本文には年とタイムゾーンがありません。READMEの採取条件（2026年・UTC）と対象ファイルの日付を先に確認します。' },
       { title: '失敗元を集計する', command: "grep 'Failed password' /var/log/auth.log | awk '{print $(NF-3)}' | sort | uniq -c | sort -nr", explanation: '60件、12件、7件の順になります。sortで同じIPを隣り合わせにしてからuniq -cで数えます。' },
-      { title: '同じIPの認証成功を探す', command: "grep '198.51.100.73' /var/log/auth.log | grep 'Accepted'", explanation: '09:18:42 UTC、deployへのパスワード認証成功が1件見つかります。' },
+      { title: '同じIPの認証成功を探す', command: "grep -F 'from 198.51.100.73 port ' /var/log/auth.log | grep 'Accepted'", explanation: '09:18:42 UTC、deployへのパスワード認証成功が1件見つかります。' },
       { title: '後続の権限使用を追う', command: "grep 'sudo' /var/log/auth.log | grep 'deploy'", explanation: 'idの実行に続き、09:20:11 UTCにnginxの再起動コマンドがroot権限で実行された記録があります。' },
     ], initialCommand: 'cat /home/analyst/README.txt',
   };
@@ -93,8 +103,8 @@
   const webRecords = [];
   const auditRecords = [];
   let webOrder = 0;
-  const nginxTime = at => { const d = new Date(at); return '12/Aug/2026:' + [d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()].map(x => String(x).padStart(2, '0')).join(':') + ' +0000'; };
-  const access = (at, ip, method, path, status, bytes, requestId, agent = 'LabBrowser/1.0') => webRecords.push({ at, order: webOrder++, line: ip + ' - - [' + nginxTime(at) + '] "' + method + ' ' + path + ' HTTP/1.1" ' + status + ' ' + bytes + ' "-" "' + agent + '" request_id=' + requestId });
+  const nginxTime = (at, offsetHours = 0) => { const d = new Date(Date.parse(at) + offsetHours * 3600000); return '12/Aug/2026:' + [d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()].map(x => String(x).padStart(2, '0')).join(':') + (offsetHours === 9 ? ' +0900' : ' +0000'); };
+  const access = (at, ip, method, path, status, bytes, requestId, agent = 'LabBrowser/1.0') => webRecords.push({ at, order: webOrder++, line: ip + ' - - [' + nginxTime(at, 9) + '] "' + method + ' ' + path + ' HTTP/1.1" ' + status + ' ' + bytes + ' "-" "' + agent + '" request_id=' + requestId });
   const audit = (at, message) => auditRecords.push({ at, order: webOrder++, line: at + ' portal-01 app_audit ' + message });
   const publicPaths = ['/', '/products', '/assets/app.css', '/assets/app.js', '/help', '/health', '/favicon.ico'];
   const publicIps = ['192.0.2.20', '192.0.2.21', '192.0.2.22', '198.51.100.18', '203.0.113.19'];
@@ -109,7 +119,7 @@
   audit(utc(10, 8, 10), 'action=data_export result=denied actor=anonymous src_ip=203.0.113.88 resource=users reason=authentication_required request_id=req-2031');
   access(utc(10, 8, 52), '203.0.113.88', 'POST', '/admin/login', 401, 92, 'req-2038', 'TrainingClient/1.0');
   audit(utc(10, 8, 52), 'action=login result=failure actor=report-admin src_ip=203.0.113.88 reason=invalid_password request_id=req-2038');
-  access(utc(10, 9, 21), '203.0.113.88', 'POST', '/admin/login', 302, 0, 'req-2041', 'TrainingClient/1.0');
+  access(utc(10, 9, 21), '203.0.113.88', 'POST', '/admin/login', 302, 145, 'req-2041', 'TrainingClient/1.0');
   audit(utc(10, 9, 21), 'action=login result=success actor=report-admin src_ip=203.0.113.88 request_id=req-2041');
   access(utc(10, 9, 23), '203.0.113.88', 'GET', '/admin', 200, 4120, 'req-2042', 'TrainingClient/1.0');
   access(utc(10, 10, 5), '203.0.113.88', 'GET', '/admin/reports', 200, 5190, 'req-2044', 'TrainingClient/1.0');
@@ -118,7 +128,7 @@
   access(utc(10, 12, 24), '203.0.113.88', 'GET', '/admin/export/payments.csv', 403, 81, 'req-2049', 'TrainingClient/1.0');
   audit(utc(10, 12, 24), 'action=data_export result=denied actor=report-admin src_ip=203.0.113.88 resource=payments reason=insufficient_permission request_id=req-2049');
   for (let i = 0; i < 25; i++) audit(stamp(10 * 3600 + 20 + i * 47), 'action=page_view result=success actor=' + (i % 2 ? 'staff-a' : 'staff-b') + ' src_ip=' + publicIps[i % 3] + ' resource=dashboard request_id=req-audit-' + i);
-  access(utc(10, 3, 1), '192.0.2.20', 'POST', '/admin/login', 302, 0, 'req-staff-login');
+  access(utc(10, 3, 1), '192.0.2.20', 'POST', '/admin/login', 302, 145, 'req-staff-login');
   audit(utc(10, 3, 1), 'action=login result=success actor=staff-a src_ip=192.0.2.20 request_id=req-staff-login');
   access(utc(10, 4, 12), '192.0.2.20', 'GET', '/admin/export/users.csv', 200, 18000, 'req-staff-export');
   audit(utc(10, 4, 12), 'action=data_export result=success actor=staff-a src_ip=192.0.2.20 resource=users format=csv rows=45 request_id=req-staff-export');
@@ -156,7 +166,7 @@
   let egressOrder = 0;
   const record = (records, at, line) => records.push({ at, order: egressOrder++, line });
   const proxy = (at, source, method, host, path, status, bytesOut, bytesIn, id) => record(proxyRecords, at, at + ' proxy-01 src=' + source + ' method=' + method + ' host=' + host + ' path=' + path + ' status=' + status + ' bytes_out=' + bytesOut + ' bytes_in=' + bytesIn + ' request_id=' + id);
-  const dns = (at, source, qname, answer, id) => record(dnsRecords, at, at + ' dns-01 named[610]: client=' + source + '#53000 query_id=' + id + ' qname=' + qname + ' qtype=A result=NOERROR answer=' + answer);
+  const dns = (at, source, qname, answer, id) => record(dnsRecords, at, at + ' dns-01 normalized_dns client=' + source + '#53000 query_id=' + id + ' qname=' + qname + ' qtype=A result=NOERROR answer=' + answer);
   const mail = (at, message) => record(mailRecords, at, at + ' mail-01 ' + message);
   const normalHosts = ['updates.vendor.example', 'docs.team.test', 'status.service.example', 'portal.lab.test'];
   const normalSources = ['192.0.2.11', '192.0.2.12', '192.0.2.20', '192.0.2.21', '192.0.2.34'];
@@ -177,7 +187,8 @@
   mail(utc(11, 16, 42), 'postfix/qmgr[4203]: C6D71A20F1: from=<svc-reports@lab.test>, size=846120, nrcpt=1 (queue active)');
   mail(utc(11, 16, 43), 'postfix/smtp[4204]: C6D71A20F1: to=<drop@archive-sync.example>, relay=mx.archive-sync.example[198.51.100.203]:25, delay=1.2, delays=0.1/0.1/0.4/0.6, dsn=2.0.0, status=sent (250 2.0.0 queued as TRAIN-884)');
   mail(utc(11, 16, 43), 'postfix/qmgr[4203]: C6D71A20F1: removed');
-  for (let i = 0; i < 4; i++) proxy(utc(11, 20 + i, 5), '192.0.2.34', 'POST', 'archive-sync.example', '/v1/upload', 200, 262144, 96, 'px-900' + (i + 1));
+  const uploads = [[20, 5, 196608], [20, 58, 327680], [22, 17, 286720], [23, 5, 237568]];
+  uploads.forEach(([minute, second, bytes], i) => proxy(utc(11, minute, second), '192.0.2.34', 'POST', 'archive-sync.example', '/v1/upload', 200, bytes, 96, 'px-900' + (i + 1)));
   dns(utc(11, 22, 1), '192.0.2.34', 'archive-sync.example', '198.51.100.202', 'dns-7303');
   proxy(utc(11, 23, 50), '192.0.2.11', 'POST', 'portal.lab.test', '/api/metrics', 204, 2048, 0, 'px-metrics-1');
   proxy(utc(11, 24, 10), '192.0.2.34', 'GET', 'archive-sync.example', '/health', 200, 148, 32, 'px-9010');
@@ -201,7 +212,7 @@
       { id: 'workstation', label: '共通の端末', prompt: '繰り返す /v1/upload へのPOST、関連するDNS問い合わせ、メール送信元に共通する端末IPは？', placeholder: '端末IP', accepted: ['192.0.2.34'], answer: '192.0.2.34', explanation: 'プロキシのsrc、DNSのclient、メール受付のclientが192.0.2.34で一致します。共有NAT等の追加情報がないこの演習では、同じ端末の通信として関連付けます。', evidence: [evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9001'), evidence(egressFiles, '/var/log/named/query.log', 'query_id=dns-7301'), evidence(egressFiles, '/var/log/mail.log', 'client=ws-34.lab.test')], hints: [{ text: 'まずアップロード先の要求を探し、srcの値を確認します。', command: "grep '/v1/upload' /var/log/proxy/access.log" }, { text: 'DNSとメールでも同じ送信元を探します。', command: "grep '192.0.2.34' /var/log/named/query.log /var/log/mail.log" }] },
       { id: 'domain', label: '外部の宛先', prompt: '4回のアップロード先で、関連メールの宛先ドメインでもある名前は？', placeholder: 'ホスト名・ドメイン名', accepted: ['archive-sync.example', 'host=archive-sync.example'], answer: 'archive-sync.example', explanation: 'POST先のhostはarchive-sync.example。メールの宛先もdrop@archive-sync.exampleで、同じドメインに関連します。通常の社内メトリクスPOSTと区別してください。', evidence: [evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9001'), evidence(egressFiles, '/var/log/mail.log', 'to=<drop@archive-sync.example>')], hints: [{ text: 'プロキシでPOSTだけを抽出し、hostの項目を見ます。', command: "grep 'method=POST' /var/log/proxy/access.log" }, { text: 'mail.logのto=<…>とホスト名を比べます。', command: "grep 'status=sent' /var/log/mail.log" }] },
       { id: 'dns-answer', label: 'DNSの回答', prompt: 'アップロード先ホストそのもののAレコード回答IPは？（mxのホストとは区別）', placeholder: '回答IP', accepted: ['198.51.100.202', 'answer=198.51.100.202'], answer: '198.51.100.202', explanation: 'qname=archive-sync.exampleのA応答が198.51.100.202です。メール中継先mx.archive-sync.exampleの198.51.100.203とは異なります。', evidence: [evidence(egressFiles, '/var/log/named/query.log', 'query_id=dns-7301'), evidence(egressFiles, '/var/log/named/query.log', 'query_id=dns-7302')], hints: [{ text: '対象ドメインを含むDNSログを探します。', command: "grep 'archive-sync.example' /var/log/named/query.log" }, { text: 'qnameが完全に一致する行のanswerを確認します。', command: "grep 'qname=archive-sync.example ' /var/log/named/query.log" }] },
-      { id: 'post-count', label: 'アップロード要求の数', prompt: 'この端末から、この外部ホストの /v1/upload へのPOSTは何件？', placeholder: '数字で入力', accepted: ['4', '4件', '4回'], answer: '4', explanation: '11:20:05、11:21:05、11:22:05、11:23:05 UTCの4件です。同じホストへのGET /healthや社内宛てのPOSTは含めません。各要求のbytes_outは262144です。', evidence: [evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9001'), evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9004')], hints: [{ text: '送信元、メソッド、ホスト、パスを絞って行数を数えます。' }, { text: '対象のPOSTだけに絞った行数をwc -lで数えます。', command: "grep 'src=192.0.2.34 ' /var/log/proxy/access.log | grep 'method=POST' | grep 'host=archive-sync.example ' | grep 'path=/v1/upload ' | wc -l" }] },
+      { id: 'post-count', label: 'アップロード要求の数', prompt: 'この端末から、この外部ホストの /v1/upload へのPOSTは何件？', placeholder: '数字で入力', accepted: ['4', '4件', '4回'], answer: '4', explanation: '11:20:05、11:20:58、11:22:17、11:23:05 UTCの4件です。同じホストへのGET /healthや社内宛てのPOSTは含めません。bytes_outは196608、327680、286720、237568で、一定量・一定間隔ではありません。', evidence: [evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9001'), evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9004')], hints: [{ text: '送信元、メソッド、ホスト、パスを絞って行数を数えます。' }, { text: '対象のPOSTだけに絞った行数をwc -lで数えます。', command: "grep 'src=192.0.2.34 ' /var/log/proxy/access.log | grep 'method=POST' | grep 'host=archive-sync.example ' | grep 'path=/v1/upload ' | wc -l" }] },
       { id: 'mail-account', label: 'SMTP認証アカウント', prompt: 'この端末からの関連メール受付で記録されたSMTP認証ユーザーは？', placeholder: 'アカウント名', accepted: ['svc-reports', 'sasl_username=svc-reports'], answer: 'svc-reports', explanation: 'メールの受付行にsasl_username=svc-reportsがあります。これはSMTP認証ユーザーであり、メッセージのFromアドレスだけから推測した値ではありません。', evidence: [evidence(egressFiles, '/var/log/mail.log', 'client=ws-34.lab.test')], hints: [{ text: '端末IPを含むメール受付の行を探します。', command: "grep '192.0.2.34' /var/log/mail.log" }, { text: 'sasl_usernameがSMTP認証に使われたユーザーです。' }] },
       { id: 'queue', label: '配送結果を結ぶキューID', prompt: 'そのメールの受付と外部への配送成功記録に共通するメールキューIDは？', placeholder: 'メールキューID', accepted: ['C6D71A20F1', 'C6D71A20F1:'], answer: 'C6D71A20F1', explanation: '受付から配送までC6D71A20F1で追跡できます。status=sentと相手サーバーの250応答は相手がメッセージを受け付けたことを示し、人が読んだことや内容の機密性までは示しません。', evidence: [evidence(egressFiles, '/var/log/mail.log', 'client=ws-34.lab.test'), evidence(egressFiles, '/var/log/mail.log', 'to=<drop@archive-sync.example>')], hints: [{ text: 'メール受付行では、プロセス名の後にキューIDがあります。', command: "grep 'sasl_username=svc-reports' /var/log/mail.log" }, { text: '見つけたキューIDで絞ると、受付・送信元・宛先・配送結果を続けて読めます。', command: "grep 'C6D71A20F1' /var/log/mail.log" }] },
     ],
@@ -381,15 +392,15 @@
   // Additional investigations reuse the same immutable log fixtures and stable task IDs.
   ssh.minutes = 25;
   ssh.tasks.push(
-    { id: 'target-count', label: '試行された名前の種類', prompt: '最多の送信元IPがパスワード認証を試したユーザー名は何種類？（存在しない名前も含む）', placeholder: '種類数', accepted: ['3', '3種類'], answer: '3', explanation: '対象名を末尾から抽出して重複を除くとadmin・root・deployの3種類です。invalid userの有無による列位置の違いに注意します。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'sshd[3000]:'), evidence(sshFiles, '/var/log/auth.log', 'sshd[3030]:'), evidence(sshFiles, '/var/log/auth.log', 'sshd[3050]:')], hints: [{ text: '対象IPの認証失敗から名前を抽出します。', command: "grep 'Failed password' /var/log/auth.log | grep '198.51.100.73' | awk '{print $(NF-5)}'" }, { text: '並べ替え、重複除去、行数の順で集計します。', command: "grep 'Failed password' /var/log/auth.log | grep '198.51.100.73' | awk '{print $(NF-5)}' | sort | uniq | wc -l" }] },
-    { id: 'top-target', label: '最も多い認証対象名', prompt: 'この送信元が最も多く試したユーザー名は？', placeholder: 'ユーザー名', accepted: ['admin'], answer: 'admin', explanation: 'adminが30回、rootが20回、deployが10回です。adminはinvalid userとして記録されており、その名前のアカウントが存在するとは限りません。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'sshd[3000]:'), evidence(sshFiles, '/var/log/auth.log', 'sshd[3029]:')], hints: [{ text: '対象名ごとの件数を比較します。', command: "grep 'Failed password' /var/log/auth.log | grep '198.51.100.73' | awk '{print $(NF-5)}' | sort | uniq -c" }, { text: '件数を大きい順にすると最多の名前が先頭です。', command: "grep 'Failed password' /var/log/auth.log | grep '198.51.100.73' | awk '{print $(NF-5)}' | sort | uniq -c | sort -nr" }] },
-    { id: 'success-gap', label: '最後の失敗から成功まで', prompt: 'この送信元の最後の認証失敗からパスワード認証成功までは何秒？', placeholder: '秒数', accepted: ['50', '50秒', '50 seconds'], answer: '50', explanation: '最後の失敗は09:17:52 UTC、成功は09:18:42 UTCなので50秒です。成功直後のセッション開始時刻とは区別します。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'sshd[3059]:'), evidence(sshFiles, '/var/log/auth.log', 'Accepted password for deploy')], hints: [{ text: '時系列の最後の失敗を確認します。', command: "grep '198.51.100.73' /var/log/auth.log | grep 'Failed password' | sed -n '$p'" }, { text: '認証成功時刻との差を秒に直します。', command: "grep '198.51.100.73' /var/log/auth.log | grep 'Accepted password'" }] },
+    { id: 'target-count', label: '試行された名前の種類', prompt: '最多の送信元IPがパスワード認証を試したユーザー名は何種類？（存在しない名前も含む）', placeholder: '種類数', accepted: ['3', '3種類'], answer: '3', explanation: '対象名を末尾から抽出して重複を除くとadmin・root・deployの3種類です。invalid userの有無による列位置の違いに注意します。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'Failed password for invalid user admin from 198.51.100.73 port 45000'), evidence(sshFiles, '/var/log/auth.log', 'Failed password for root from 198.51.100.73 port 45030'), evidence(sshFiles, '/var/log/auth.log', 'Failed password for deploy from 198.51.100.73 port 45050')], hints: [{ text: '対象IPの認証失敗から名前を抽出します。', command: "grep 'Failed password' /var/log/auth.log | grep -F 'from 198.51.100.73 port ' | awk '{print $(NF-5)}'" }, { text: '並べ替え、重複除去、行数の順で集計します。', command: "grep 'Failed password' /var/log/auth.log | grep -F 'from 198.51.100.73 port ' | awk '{print $(NF-5)}' | sort | uniq | wc -l" }] },
+    { id: 'top-target', label: '最も多い認証対象名', prompt: 'この送信元が最も多く試したユーザー名は？', placeholder: 'ユーザー名', accepted: ['admin'], answer: 'admin', explanation: 'adminが30回、rootが20回、deployが10回です。adminはinvalid userとして記録されており、その名前のアカウントが存在するとは限りません。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'Failed password for invalid user admin from 198.51.100.73 port 45000'), evidence(sshFiles, '/var/log/auth.log', 'Failed password for invalid user admin from 198.51.100.73 port 45029')], hints: [{ text: '対象名ごとの件数を比較します。', command: "grep 'Failed password' /var/log/auth.log | grep -F 'from 198.51.100.73 port ' | awk '{print $(NF-5)}' | sort | uniq -c" }, { text: '件数を大きい順にすると最多の名前が先頭です。', command: "grep 'Failed password' /var/log/auth.log | grep -F 'from 198.51.100.73 port ' | awk '{print $(NF-5)}' | sort | uniq -c | sort -nr" }] },
+    { id: 'success-gap', label: '最後の失敗から成功まで', prompt: 'この送信元の最後の認証失敗からパスワード認証成功までは何秒？', placeholder: '秒数', accepted: ['50', '50秒', '50 seconds'], answer: '50', explanation: '最後の失敗は09:17:52 UTC、成功は09:18:42 UTCなので50秒です。成功直後のセッション開始時刻とは区別します。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'Failed password for deploy from 198.51.100.73 port 45059'), evidence(sshFiles, '/var/log/auth.log', 'Accepted password for deploy')], hints: [{ text: '時系列の最後の失敗を確認します。', command: "grep -F 'from 198.51.100.73 port ' /var/log/auth.log | grep 'Failed password' | sed -n '$p'" }, { text: '認証成功時刻との差を秒に直します。', command: "grep -F 'from 198.51.100.73 port ' /var/log/auth.log | grep 'Accepted password'" }] },
     { id: 'sudo-count', label: '特権コマンドの実行数', prompt: 'deployによるsudoのCOMMAND実行記録は何件？（セッション行は除外）', placeholder: '件数', accepted: ['2', '2件', '2回'], answer: '2', explanation: 'COMMAND=があるのはidとsystemctlの2件です。セッションの開始・終了を実行回数に含めません。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'COMMAND=/usr/bin/id'), evidence(sshFiles, '/var/log/auth.log', 'COMMAND=/usr/bin/systemctl')], hints: [{ text: 'まずdeployに関連するsudoログを確認します。', command: "grep 'sudo' /var/log/auth.log | grep 'deploy'" }, { text: 'コマンドが記録された行だけを数えます。', command: "grep 'sudo' /var/log/auth.log | grep 'deploy' | grep 'COMMAND=' | wc -l" }] },
-    { id: 'trusted-key-count', label: '正規管理端末との比較', prompt: '192.0.2.10からopsへの公開鍵認証成功は何件？', placeholder: '件数', accepted: ['8', '8件', '8回'], answer: '8', explanation: '正規管理端末からのAccepted publickeyは8件です。別の送信元からのパスワード失敗やdeployへの成功と分けて集計します。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'sshd[1800]:'), evidence(sshFiles, '/var/log/auth.log', 'sshd[1807]:')], hints: [{ text: '認証方式と対象アカウントを合わせて絞ります。', command: "grep 'Accepted publickey for ops' /var/log/auth.log" }, { text: '指定された送信元に絞って行数を数えます。', command: "grep 'Accepted publickey for ops' /var/log/auth.log | grep '192.0.2.10' | wc -l" }] }
+    { id: 'trusted-key-count', label: '正規管理端末との比較', prompt: '192.0.2.10からopsへの公開鍵認証成功は何件？', placeholder: '件数', accepted: ['8', '8件', '8回'], answer: '8', explanation: '正規管理端末からのAccepted publickeyは8件です。別の送信元からのパスワード失敗やdeployへの成功と分けて集計します。', evidence: [evidence(sshFiles, '/var/log/auth.log', 'sshd[1800]:'), evidence(sshFiles, '/var/log/auth.log', 'sshd[1807]:')], hints: [{ text: '認証方式と対象アカウントを合わせて絞ります。', command: "grep 'Accepted publickey for ops' /var/log/auth.log" }, { text: '指定された送信元に絞って行数を数えます。', command: "grep 'Accepted publickey for ops' /var/log/auth.log | grep -F 'from 192.0.2.10 port ' | wc -l" }] }
   );
   ssh.walkthrough.push(
-    { title: '試行された名前の分布を調べる', command: "grep 'Failed password' /var/log/auth.log | grep '198.51.100.73' | awk '{print $(NF-5)}' | sort | uniq -c | sort -nr", explanation: 'admin 30件、root 20件、deploy 10件。不存在の名前も含めて試行の対象を整理します。' },
-    { title: '正規の管理アクセスと比較する', command: "grep 'Accepted publickey for ops' /var/log/auth.log | grep '192.0.2.10' | wc -l", explanation: '正規管理端末の公開鍵認証成功は8件。認証方式・名前・送信元を組み合わせて比較します。' }
+    { title: '試行された名前の分布を調べる', command: "grep 'Failed password' /var/log/auth.log | grep -F 'from 198.51.100.73 port ' | awk '{print $(NF-5)}' | sort | uniq -c | sort -nr", explanation: 'admin 30件、root 20件、deploy 10件。不存在の名前も含めて試行の対象を整理します。' },
+    { title: '正規の管理アクセスと比較する', command: "grep 'Accepted publickey for ops' /var/log/auth.log | grep -F 'from 192.0.2.10 port ' | wc -l", explanation: '正規管理端末の公開鍵認証成功は8件。認証方式・名前・送信元を組み合わせて比較します。' }
   );
 
   web.minutes = 30;
@@ -407,7 +418,7 @@
 
   egress.minutes = 40;
   egress.tasks.push(
-    { id: 'upload-bytes', label: 'アップロードの送信量合計', prompt: '4回の対象アップロードで記録されたbytes_outの合計は何バイト？', placeholder: '合計バイト数', accepted: ['1048576', '1,048,576', '1048576バイト', '1 MiB', '1MiB'], answer: '1048576', explanation: '各要求が262144バイトで4回なので、合計1048576バイト（1 MiB）です。応答のbytes_inやGET、メールのサイズは含めません。', evidence: [evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9001'), evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9002'), evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9003'), evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9004')], hints: [{ text: '対象アップロードの送信量の列を取り出します。', command: "grep 'path=/v1/upload ' /var/log/proxy/access.log | grep 'src=192.0.2.34 ' | awk '{print $8}'" }, { text: '値ごとの回数を求め、その値と回数を掛け合わせます。', command: "grep 'path=/v1/upload ' /var/log/proxy/access.log | grep 'src=192.0.2.34 ' | awk '{print $8}' | sort | uniq -c" }] },
+    { id: 'upload-bytes', label: 'アップロードの送信量合計', prompt: '4回の対象アップロードで記録されたbytes_outの合計は何バイト？', placeholder: '合計バイト数', accepted: ['1048576', '1,048,576', '1048576バイト', '1 MiB', '1MiB'], answer: '1048576', explanation: '196608＋327680＋286720＋237568＝1048576バイト（1 MiB）です。応答のbytes_inやGET、メールのサイズは含めません。', evidence: [evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9001'), evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9002'), evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9003'), evidence(egressFiles, '/var/log/proxy/access.log', 'request_id=px-9004')], hints: [{ text: '対象アップロードの送信量の列を取り出します。', command: "grep 'path=/v1/upload ' /var/log/proxy/access.log | grep 'src=192.0.2.34 ' | awk '{print $8}'" }, { text: '各bytes_outの数値を取り出して合計します。', command: "grep 'path=/v1/upload ' /var/log/proxy/access.log | grep 'src=192.0.2.34 ' | awk '{print $8}' | cut -d= -f2 | awk '{sum += $1} END {print sum}'" }] },
     { id: 'dns-names', label: '関連DNS名の種類数', prompt: 'この端末のDNSログでarchive-sync.exampleに関連するqnameは何種類？', placeholder: '種類数', accepted: ['2', '2種類'], answer: '2', explanation: 'archive-sync.exampleとmx.archive-sync.exampleの2種類です。前者には2回の問い合わせがあるため、行数の3とは区別します。', evidence: [evidence(egressFiles, '/var/log/named/query.log', 'query_id=dns-7301'), evidence(egressFiles, '/var/log/named/query.log', 'query_id=dns-7302'), evidence(egressFiles, '/var/log/named/query.log', 'query_id=dns-7303')], hints: [{ text: '端末と関連ドメインで絞り、qnameを抽出します。', command: "grep 'client=192.0.2.34#' /var/log/named/query.log | grep 'archive-sync.example' | awk '{print $6}'" }, { text: '同じqnameをまとめてから種類を数えます。', command: "grep 'client=192.0.2.34#' /var/log/named/query.log | grep 'archive-sync.example' | awk '{print $6}' | sort | uniq | wc -l" }] },
     { id: 'mail-size', label: 'キューに入ったメールのサイズ', prompt: '関連するメールのqmgr受付行で記録されたsizeは何バイト？', placeholder: 'バイト数', accepted: ['846120', '846,120', '846120バイト', 'size=846120', 'size=846120,'], answer: '846120', explanation: 'C6D71A20F1のqmgr受付行にsize=846120があります。これはキューに入ったメッセージのサイズであり、添付ファイルだけのサイズや送信内容は分かりません。', evidence: [evidence(egressFiles, '/var/log/mail.log', 'C6D71A20F1: from=')], hints: [{ text: 'キューIDで受付から配送までを読みます。', command: "grep 'C6D71A20F1' /var/log/mail.log" }, { text: 'fromとsizeのあるqmgr行に絞ります。', command: "grep 'C6D71A20F1' /var/log/mail.log | grep 'size='" }] },
     { id: 'mail-delay', label: '配送遅延の記録値', prompt: '外部宛て配送のSMTPログで、delayに記録された値は何秒？', placeholder: '秒数（小数可）', accepted: ['1.2', '1.2秒', 'delay=1.2', 'delay=1.2,'], answer: '1.2', explanation: '配送行のdelay=1.2が総配送遅延です。delays=0.1/0.1/0.4/0.6は区間別の内訳であり、別の値として読みます。', evidence: [evidence(egressFiles, '/var/log/mail.log', 'to=<drop@archive-sync.example>')], hints: [{ text: '関連キューの配送結果に絞ります。', command: "grep 'C6D71A20F1' /var/log/mail.log | grep 'status=sent'" }, { text: 'delay=と、複数区間を表すdelays=を区別してください。', command: "grep 'C6D71A20F1' /var/log/mail.log | grep 'status=sent' | awk '{print $7, $8}'" }] },
@@ -415,7 +426,7 @@
     { id: 'recipient', label: '配送先のメールアドレス', prompt: '関連キューが外部へ配送した宛先メールアドレス全文は？', placeholder: 'user@domain', accepted: ['drop@archive-sync.example', '<drop@archive-sync.example>', 'to=<drop@archive-sync.example>', 'to=<drop@archive-sync.example>,'], answer: 'drop@archive-sync.example', explanation: '配送行のto=<drop@archive-sync.example>が宛先です。SMTP認証ユーザー、envelope From、宛先、リレーホストを分けて読みます。', evidence: [evidence(egressFiles, '/var/log/mail.log', 'to=<drop@archive-sync.example>')], hints: [{ text: '対象キューの配送結果を確認します。', command: "grep 'C6D71A20F1' /var/log/mail.log | grep 'status=sent'" }, { text: 'to=<…>が宛先です。relay=は中継ホストなので区別してください。', command: "grep 'C6D71A20F1' /var/log/mail.log | grep 'status=sent' | awk '{print $5}'" }] }
   );
   egress.walkthrough.push(
-    { title: 'アップロードの値と回数を集計する', command: "grep 'path=/v1/upload ' /var/log/proxy/access.log | awk '{print $8}' | sort | uniq -c", explanation: '262144バイトが4回。合計1048576バイトですが、この値だけでは送信内容の機密性は分かりません。' },
+    { title: 'アップロードの値と回数を集計する', command: "grep 'path=/v1/upload ' /var/log/proxy/access.log | awk '{print $8}' | sort | uniq -c", explanation: '異なる4つの送信量（196608、327680、286720、237568）の合計は1048576バイトですが、この値だけでは送信内容の機密性は分かりません。' },
     { title: '問い合わせ行数とホスト名の種類を分ける', command: "grep 'archive-sync.example' /var/log/named/query.log | awk '{print $6}' | sort | uniq -c", explanation: 'アップロード先への問い合わせは2回、MXホストは1回。関連qnameは計2種類です。' }
   );
 
@@ -445,5 +456,39 @@
     { title: '正常要求の子プロセス構成を集計する', command: "grep 'req-diag-normal-' /var/log/process/exec.log | grep 'event=exec ' | awk '{print $8}' | sort | uniq -c", explanation: 'shが25件、pingが25件で計50件。正常25要求に対し各2つのexecです。' },
     { title: '親自身の開始と終了を追う', command: "grep ' pid=8840 ' /var/log/process/exec.log", explanation: '親の実行ファイルとargv、execからexitまでの1秒を確認します。子のppid行とは区別します。' }
   );
+  // Historical rotations are independent retained periods, not the normal comparison snapshot.
+  const sshHistory = {
+    '/var/log/auth.log.1': textFile([
+      'Aug 11 22:03:11 edge-01 sshd[7101]: Accepted publickey for ops from 192.0.2.10 port 51984 ssh2: ED25519 SHA256:FICTIONALTRAININGKEY',
+      'Aug 11 22:03:12 edge-01 sshd[7101]: pam_unix(sshd:session): session opened for user ops(uid=1001) by (uid=0)',
+      'Aug 11 22:04:09 edge-01 sudo: ops : TTY=pts/0 ; PWD=/home/ops ; USER=root ; COMMAND=/usr/bin/journalctl -u ssh',
+      'Aug 11 22:06:40 edge-01 sshd[7101]: pam_unix(sshd:session): session closed for user ops'
+    ]),
+    '/var/log/auth.log.2.gz': textFile([
+      'Aug  9 03:01:07 edge-01 sshd[6201]: Invalid user test from 203.0.113.56 port 41820',
+      'Aug  9 03:01:09 edge-01 sshd[6201]: Failed password for invalid user test from 203.0.113.56 port 41820 ssh2',
+      'Aug  9 03:01:10 edge-01 sshd[6201]: Connection closed by invalid user test 203.0.113.56 port 41820 [preauth]'
+    ])
+  };
+  Object.assign(ssh.files, sshHistory);
+  Object.assign(ssh.baselineFiles, sshHistory);
+  ssh.walkthrough.push({ title: '履歴の期間と件数を確かめる', command: "zgrep -c 'Failed password' /var/log/auth.log.2.gz", explanation: '8月9日の圧縮履歴には失敗が1件あります。8月12日の60件には加えません。auth.log.1は8月11日、/baselineは現行期間の正常比較用です。' });
+  ssh.clockNote = 'SSH syslog: 年・TZなし。採取条件は2026年・UTC。現行は8/12、履歴は8/11と8/9。';
+  web.clockNote = 'Nginxは+0900（日本時間）、アプリ監査はUTC（Z）。照合時は9時間差を補正します。';
+  const notes = {
+    ssh: '採取条件: 年は2026年、ホストのタイムゾーンはUTC。auth.logは8月12日、auth.log.1は8月11日、auth.log.2.gzは8月9日です。syslog本文には年・TZがなく、1桁の日付はAug  9のように空白で桁を合わせます。履歴は過去日の保存分で、/baselineは同じ演習期間の正常比較用です。課題の件数は指定がない限り現行auth.logを対象とします。\n圧縮履歴はzcat /var/log/auth.log.2.gzまたはzgrepで読みます。このブラウザでは展開済み文字列を保持し、gzip展開のバイナリ処理は再現しません。\n認証ログの保存先はOS・syslog設定次第で、/var/log/auth.log、/var/log/secure、journal等があります。',
+    web: 'このケースのNginx時刻は+0900、アプリ監査はZ（UTC）です。例: 19:12:08 +0900と10:12:08Zは同じ瞬間です。時刻をUTCへそろえて要求ID・送信元も照合してください。',
+    egress: '形式: DNSはnormalized_dnsという教材独自の正規化形式で、BIND namedの生のquery logではありません。query_idとanswerは問い合わせ・回答の計測情報をまとめた教材の項目です。\nプロキシも教材独自の正規化形式です。bytes_outは端末から外向き、bytes_inは応答側のHTTPメッセージのバイト数（本文＋HTTPヘッダー、TLS/TCP/IP分は除外）。Squidの標準項目ではなく、この計測規約でのみ解釈します。'
+  };
+  for (const exercise of [ssh, web, egress, sqli, cmdinj]) {
+    exercise.clockNote ||= '時刻はUTC（Z / +0000）。日本時間は+9時間。';
+    let note = notes[exercise.id] || '';
+    if (exercise.files['/var/log/nginx/access.log']) note += '\nNginxはcombinedにrequest_idを加えたカスタムlog_formatを想定します。標準combinedにはrequest_idはありません。実運用では$request_idを記録し、proxy_set_header X-Request-ID $request_id等でアプリへ渡し、同じ値をアプリ監査にも記録する設定が必要です。教材のreq-…は読みやすい固定IDで、Nginxの$request_idが生成する32桁の16進文字列とは表記が異なります。';
+    for (const files of [exercise.files, exercise.baselineFiles]) {
+      if (exercise.id === 'ssh') files['/home/analyst/README.txt'] = files['/home/analyst/README.txt'].replace('日時: 2026年8月12日。全ログのタイムゾーンはUTCです（日本時間は+9時間）。', '現行ログの日付: 2026年8月12日。採取条件はUTC。過去日のローテート済みログも別に提供します。');
+      if (exercise.id === 'web') files['/home/analyst/README.txt'] = files['/home/analyst/README.txt'].replace('全ログのタイムゾーンはUTCです（日本時間は+9時間）。', 'Nginxは+0900、アプリ監査はUTCです。');
+      files['/home/analyst/README.txt'] += '\n' + note + '\n';
+    }
+  }
   globalThis.LOG_LAB_CASES = [ssh, web, egress, sqli, cmdinj];
 })();

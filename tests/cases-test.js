@@ -49,14 +49,18 @@ const golden=[
       }
     ],
     "files": {
-      "/home/analyst/README.txt": "a43056dd919ba519c9d5d113b390058abb154f9c412826369ccb67292fd62eb5",
+      "/home/analyst/README.txt": "d4095e9cc0d5890c85bfaefa6fd8972e0b50445ebe9acb7a67a5590200d384e1",
       "/etc/hostname": "236d7d0fd3ed61a56a4d22a4125dbca7ff2bcba23486d8b2867821e6cafdfde1",
-      "/var/log/auth.log": "1134f21e1dd88f1a76e7feaa52eb1c1b14e61b4c070fbfd3c3da48f61f8c4266"
+      "/var/log/auth.log": "c1387f111b119092e5119a40743f37ecd156bebf7b04f17893effc29061566f2",
+      "/var/log/auth.log.1": "fca26c9f009ce4e877a060e39ccda997181787999578fa7dcc14f6cf6b06e6aa",
+      "/var/log/auth.log.2.gz": "a73502da136e7fad4fe7d4255ada89a7d8eb62cffb50a685062f05c036fe6cd8"
     },
     "baseline": {
       "/etc/hostname": "236d7d0fd3ed61a56a4d22a4125dbca7ff2bcba23486d8b2867821e6cafdfde1",
-      "/home/analyst/README.txt": "5bfbd50b4c8ba8806fb9aa144c66530c4d03c0616e69b5090921c102f2086098",
-      "/var/log/auth.log": "2e0fde711c21d38c9447d94c7e030012e581052c5eca5258e140378bd06d1311"
+      "/home/analyst/README.txt": "fc4495485a5e2cfd9d3af56a21383ed22452ceda86ca5af4ecf0b11484a33f10",
+      "/var/log/auth.log": "39ae751f4730819dc73d714b33288fea21ca43db04af7ca6be43134926f43902",
+      "/var/log/auth.log.1": "fca26c9f009ce4e877a060e39ccda997181787999578fa7dcc14f6cf6b06e6aa",
+      "/var/log/auth.log.2.gz": "a73502da136e7fad4fe7d4255ada89a7d8eb62cffb50a685062f05c036fe6cd8"
     }
   },
   {
@@ -104,15 +108,15 @@ const golden=[
       }
     ],
     "files": {
-      "/home/analyst/README.txt": "91ad4e4eac32e4625a6169f1b0c4e6fddf888370a8a4e43344b607772da4bad9",
+      "/home/analyst/README.txt": "ae909f8833ca8640f78d92d5cea6efe35e8127987b17a934f8b46a1ee2bd7b5b",
       "/etc/hostname": "b01422841fc4f78ddc9aaa347b6a03b7cdf36d9c543222d4652b0aa61edaae6d",
-      "/var/log/nginx/access.log": "2d747d089fb48115a48a23e018d84d6a4a1b305deea094b6ac0ec824157de671",
+      "/var/log/nginx/access.log": "46edf1bc7066b3ac71ccf273d15356aec3d703526fcbbdef08f8d000d0aa863c",
       "/var/log/app/audit.log": "cc366500963c8f7a9b3b5f7f98441d588df945bdb055146a6cd3351976a0413e"
     },
     "baseline": {
       "/etc/hostname": "b01422841fc4f78ddc9aaa347b6a03b7cdf36d9c543222d4652b0aa61edaae6d",
-      "/home/analyst/README.txt": "ac71eb555951a805047dd88e9cf5f3e1e593dbf4e425e0352ab80f3c47f7a202",
-      "/var/log/nginx/access.log": "683cbfbce088404af0e23764fb3ed551f7e0ccbb17acf7abf53902db5d69ded2",
+      "/home/analyst/README.txt": "19ee4c441b451e3cba7dee355e1d3a7784656af9838a6451d283c048c5bc69ae",
+      "/var/log/nginx/access.log": "f6ead11586bce1f66cf299f5b8b169df093fff0dcab1fa9a5f23a2220ca96e67",
       "/var/log/app/audit.log": "9fdd7cbbf2ef239f546b347e91f080e634bc589ff4cfba5424865f9a2f1bf4fe"
     }
   },
@@ -169,17 +173,17 @@ const golden=[
       }
     ],
     "files": {
-      "/home/analyst/README.txt": "f42aa12f02aaa357b1858a084ad2d3d010ee7966108033f46113f799de1f752e",
+      "/home/analyst/README.txt": "1ba2543c2a18512b60bd614b4349f0157a37345d855907dd92b6e3650b582739",
       "/etc/hostname": "38f6475f3926a9d8c56ce8567001abf3c2568c7fdad99a73e5c90d08700bf077",
-      "/var/log/proxy/access.log": "c3d7d91e866934cc6315388817376a706d2bf8952f48d1660c490b923c66e620",
-      "/var/log/named/query.log": "509affb13c62ac353dd27f75ee873b9264fe2f45a984cc043efec233f6d82f7e",
+      "/var/log/proxy/access.log": "5dd705e17cfb4b6b1aa7b54c22d257218e68dafe48478c897db87be8523f5015",
+      "/var/log/named/query.log": "889c920f74885e17ceb17f487e7f43d2ef795eba1579761940a9beac8d6fc84e",
       "/var/log/mail.log": "368cd44d88cce92b2b947aa962c998483fa1b4ded335103666b2fe5a2c600146"
     },
     "baseline": {
       "/etc/hostname": "38f6475f3926a9d8c56ce8567001abf3c2568c7fdad99a73e5c90d08700bf077",
-      "/home/analyst/README.txt": "6871fbe25c4e193934a30d9cb8da37d0ad3534d43ff0a17590387c7e6a59398e",
+      "/home/analyst/README.txt": "ab55323b63af2c2ee47af7ccbc5d17788c5f95beadc03f6883e608ac0e5f8937",
       "/var/log/proxy/access.log": "aac3eb0c00070526ab6e766cdad9abe84bc4772a052e22e3d81e92b96db05ae0",
-      "/var/log/named/query.log": "965d8a87f2a03975fe7c0333b3c4c72377405c9070f0866ad595850db3badec6",
+      "/var/log/named/query.log": "6e7888a1589a52fc11f15ab09d2da6cddd671246165bd979e16ec43eadcd7063",
       "/var/log/mail.log": "048f47363a178f00611ac32b8f5c8724b43e44d88d3cdbeb0947e709c8a454fc"
     }
   },
@@ -228,7 +232,7 @@ const golden=[
       }
     ],
     "files": {
-      "/home/analyst/README.txt": "5db723be8b066470b2684387e415211ab9ed2e3a1fea1195434758f6218ca0ef",
+      "/home/analyst/README.txt": "0ca08004c9efa41b5af52c8a1a940399c1947b545779d926da4c272bc282a247",
       "/etc/hostname": "b66d63e4f8bd614b455d3ee527436ff18e01a37d520216bc3386168d62704efa",
       "/var/log/nginx/access.log": "cb065b7db1863b8cfbccb9a15fd57a09c0cc4f691ea05573abaecfea5c02cdbe",
       "/var/log/app/audit.log": "ed42c0d033ba2b84ee956422bba1d7962cb1b0fae4678b58b08aa068a86805c1",
@@ -237,7 +241,7 @@ const golden=[
     },
     "baseline": {
       "/etc/hostname": "b66d63e4f8bd614b455d3ee527436ff18e01a37d520216bc3386168d62704efa",
-      "/home/analyst/README.txt": "9082cbde0a4b56fd397841aed59df9f7a163bcac88660b9538ee3d2d7092de7b",
+      "/home/analyst/README.txt": "11e118153fdb2014006ca12d6e91e236b6dd97ab3b2be7119853664bfb91acd0",
       "/var/log/nginx/access.log": "aa4861e65e5fcbc2721397e6c5ae36980119fa014087d4386231895b024fd7fd",
       "/var/log/app/audit.log": "8a300d041d3b8266bdf57d3d562fa4fbbde2e0be7bb5978cd2db606f4ff9beb9",
       "/var/log/app/audit.jsonl": "c6c0abe0e3e8e54887e885951f58f3fa86f84f2f48eaa69e4eb9b4ce10104854",
@@ -297,7 +301,7 @@ const golden=[
       }
     ],
     "files": {
-      "/home/analyst/README.txt": "4ba7265a6a1aeabba04a371ea611c168b18f25c6cff1a7ab4fce01198efadccd",
+      "/home/analyst/README.txt": "3262c14fa7a57db115aa7d021cdbb8fa5c7d75b85ee95c94ba1bfe69794117b1",
       "/etc/hostname": "1b4f264fc6d5496d64d98441c65a2878d656bd1b2a8267d41eca8015a711bc5e",
       "/var/log/nginx/access.log": "7ce982377cf2bc2b81f631c295ba49a8d11044d0e9374a10241e6f304df86d2f",
       "/var/log/app/audit.log": "798d5ee9adf19d28f2065e0aa10ff306051621b3016f7ecaa3e1950f71053997",
@@ -306,7 +310,7 @@ const golden=[
     },
     "baseline": {
       "/etc/hostname": "1b4f264fc6d5496d64d98441c65a2878d656bd1b2a8267d41eca8015a711bc5e",
-      "/home/analyst/README.txt": "82d09df8f7e8ac79ee550c2b52f7fb3da00a5b31a10db6db8734cc7990630825",
+      "/home/analyst/README.txt": "e7effe357aaa3da833bdff7a2cf27326751a89082a650f2c289efc210ad22620",
       "/var/log/nginx/access.log": "dfb0ffe0c62f04555aa1d0885bd80a87881457ad654fd4f82d5ebfb3ca463b80",
       "/var/log/app/audit.log": "af795da0756cf45e0129c8fcf9aac2754418e11475bad9ea760404be528003d6",
       "/var/log/app/audit.jsonl": "c2ea3b7c1feec5b51b4c33cf323c7843dd40f6ea0ee4ada06e1dd9f189b88669",
@@ -328,8 +332,8 @@ test('exact 5 additional cases',()=>assert.equal(extras.length,5));
 for(const old of golden){
  const c=cases.find(c=>c.id===old.id);
  test(c.id+' old task order IDs and answers preserved',()=>assert.deepEqual(c.tasks.map(t=>({id:t.id,answer:t.answer})),old.tasks));
- for(const [p,digest]of Object.entries(old.files))test(c.id+' old file preserved '+p,()=>assert.equal(hash(c.files[p]),digest));
- for(const [p,digest]of Object.entries(old.baseline))test(c.id+' old baseline preserved '+p,()=>assert.equal(hash(c.baselineFiles[p]),digest));
+ for(const [p,digest]of Object.entries(old.files))test(c.id+' reviewed fixture '+p,()=>assert.equal(hash(c.files[p]),digest));
+ for(const [p,digest]of Object.entries(old.baseline))test(c.id+' reviewed normal fixture '+p,()=>assert.equal(hash(c.baselineFiles[p]),digest));
 }
 for(const c of extras){
  test(c.id+' 10 tasks',()=>assert.equal(c.tasks.length,10));

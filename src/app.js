@@ -1,12 +1,13 @@
 'use strict';
 (() => {
   const baseCases = globalThis.LOG_LAB_CASES;
+  const practice = globalThis.LogroomPractice;
   const i18n = globalThis.LogroomI18n;
   const tr = (...args) => i18n.t(...args);
   let cases = baseCases;
   const $ = id => document.getElementById(id);
   const STORE_KEY = 'logroom.offline.v1';
-  const makeCaseState = () => ({attackApplied:false,answers:{},feedback:{},solved:[],hints:{},revealed:[],viewed:[],notes:'',history:[],entries:[],edits:{},directories:[]});
+  const makeCaseState = () => ({attackApplied:false,answers:{},feedback:{},solved:[],hints:{},revealed:[],viewed:[],notes:'',history:[],entries:[],edits:{},metadata:{},directories:[]});
   let state = {version:1,caseId:cases[0].id,cases:{}};
   let storageAvailable = true;
   try {
@@ -19,7 +20,12 @@
   state.ui.height=state.ui.height===null?null:Math.max(180,Math.min(800,Number(state.ui.height)||360));
   state.ui.panelHidden=state.ui.panelHidden===true;
   state.locale=i18n.setLocale(state.locale);
-  cases=i18n.localizeCases(baseCases);
+  state.practice={advanced:false,seed:'',...(state.practice||{})};
+  state.practice.advanced=state.practice.advanced===true;
+  state.practice.seed=String(state.practice.seed||'').slice(0,40);
+  state.sessions=state.sessions&&typeof state.sessions==='object'?state.sessions:{};
+  const profileKey=()=>JSON.stringify([state.practice.advanced,state.practice.seed]);
+  cases=practice.variantCases(i18n.localizeCases(baseCases),state.practice);
   i18n.captureStatic(document);i18n.applyStatic(document);
   let currentCase, cs, shell, historyIndex = -1, draft = '', saveTimer, toastTimer;
   let activeTab = 'tasks';
@@ -31,13 +37,13 @@
     if (text !== undefined) n.textContent = tr(text);
     return n;
   };
-  const normalize = value => String(value).trim().replace(/\s+/g,' ').toLowerCase();
+  const normalize = practice.normalizeAnswer;
   const isCorrect = (task, value) => [task.answer,...(task.accepted || [])].some(a => normalize(a) === normalize(value));
   function hydrateCase(raw) {
     const s = {...makeCaseState(),...(raw || {})};
     // v0.1 stored attacked logs without a mode field. Preserve those saved sessions.
     s.attackApplied = raw && typeof raw.attackApplied !== 'boolean' ? true : s.attackApplied === true;
-    for (const key of ['answers','feedback','hints','edits']) if (!s[key] || typeof s[key] !== 'object' || Array.isArray(s[key])) s[key] = {};
+    for (const key of ['answers','feedback','hints','edits','metadata']) if (!s[key] || typeof s[key] !== 'object' || Array.isArray(s[key])) s[key] = {};
     for (const key of ['solved','revealed','viewed','history','entries','directories']) if (!Array.isArray(s[key])) s[key] = [];
     s.notes = typeof s.notes === 'string' ? s.notes : '';
     s.history = s.history.filter(x => typeof x === 'string').slice(-100);
@@ -69,19 +75,28 @@
     button.addEventListener('click',() => insertCommand(command)); return button;
   }
   function baselineFiles(c = currentCase) { return c.baselineFiles || c.files; }
+  function scenarioFiles(source) {
+    const files={...source};
+    if(state.practice.advanced){const path='/home/analyst/README.txt';files[path]=tr('実践モード：正常コピーなし。過去ログ・集計・sudoを使って調べます。SSHは2万行以上です。')+'\n'+(currentCase.clockNote||'')+'\n\n'+(files[path]||'').split('\n').filter(line=>!line.includes('/baseline')).join('\n');}
+    return files;
+  }
   function activeFiles() {
-    const normal = baselineFiles(), files = {...(cs.attackApplied ? currentCase.files : normal)};
+    const normal = baselineFiles(), files = scenarioFiles(cs.attackApplied ? currentCase.files : normal);
+    if(state.practice.advanced)return files;
     Object.entries(normal).forEach(([path,text]) => {if (path.startsWith('/var/log/')) files['/baseline'+path] = text;});
     files['/baseline/README.txt'] = tr('攻撃前の正常ログのコピーです。元のパスの前に /baseline を付けています。\n例：diff -u /baseline/var/log/auth.log /var/log/auth.log\ndiff の終了コード0は差分なし、1は差分ありです。\n');
     return files;
   }
   function renderMode() {
+    $('reset-title').textContent=tr(state.practice.advanced?'この設定の初期状態に戻しますか？':'サラの正常状態に戻しますか？');
+    $('reset-description').textContent=tr(state.practice.advanced?'この設定の解答・メモ・履歴・作成ファイルを消去し、攻撃を含む初期ログに戻します。他の設定は保持します。':'選択中の演習から攻撃ログを取り除き、正常ログだけに戻します。解答、メモ、履歴、仮想ファイルへの変更も消去します。他の演習は保持されます。');
+    $('reset-confirm').textContent=tr(state.practice.advanced?'初期状態に戻す':'正常状態に戻す');
     $('scenario-state').textContent = tr(cs.attackApplied ? tr('攻撃後ログ') : tr('正常ログ'));
     $('scenario-state').classList.toggle('attacked',cs.attackApplied);
-    $('scenario-summary').textContent = tr(cs.attackApplied ? tr('攻撃イベントを反映しました。正常時と比較して調べましょう。') : tr('正常なログを観察してから、攻撃を再現できます。'));
+    $('scenario-summary').textContent = state.practice.advanced ? tr('実践モード：正常コピーなし。過去ログ・集計・sudoを使って調べます。SSHは2万行以上です。') : tr(cs.attackApplied ? tr('攻撃イベントを反映しました。正常時と比較して調べましょう。') : tr('正常なログを観察してから、攻撃を再現できます。'));
     $('apply-attack').disabled = cs.attackApplied;
     $('apply-attack').textContent = tr(cs.attackApplied ? tr('攻撃ログ適用済み') : tr('攻撃ログを生成'));
-    $('baseline-notice').hidden = cs.attackApplied;
+    $('baseline-notice').hidden = cs.attackApplied || state.practice.advanced;
     $('walkthrough').hidden = !cs.attackApplied;
     if (!cs.attackApplied) $('walkthrough').open = false;
     $('briefing-content').replaceChildren(node('p','',cs.attackApplied?tr('以下は攻撃後ログに関する調査依頼です。'):tr('現在は正常ログです。以下の調査依頼は攻撃ログを生成した後の状況を説明します。')),...currentCase.briefing.map(p=>node('p','',p)));
@@ -89,11 +104,12 @@
   function applyAttack() {
     if (cs.attackApplied) return;
     // Replace the canonical scenario log streams; keep user notes and result files.
-    Object.entries(currentCase.files).forEach(([path,text]) => {shell.files[path] = text;});
+    const attacked=scenarioFiles(currentCase.files),fresh=new globalThis.LogLabShell(attacked);
+    Object.entries(attacked).forEach(([path,text]) => {shell.files[path] = text;shell.metadata[path]={...fresh.getMetadata(path)};});
     shell.allPaths();
     cs.attackApplied = true;
-    persistFiles(); renderMode(); renderTasks(); renderProgress(); save(true);
-    const entry = {command:tr('[演習] 攻撃ログを生成'),cwd:shell.cwd,stdout:(currentCase.attack?.label || currentCase.shortTitle || currentCase.title)+tr(' の合成ログを反映しました。\n正常ログは /baseline/var/log/ 以下に残っています。\n'),stderr:''};
+    persistFiles(); renderMode(); renderTasks(); renderArtifactTask(); renderProgress(); save(true);
+    const entry = {command:tr('[演習] 攻撃ログを生成'),cwd:shell.cwd,stdout:(currentCase.attack?.label || currentCase.shortTitle || currentCase.title)+(state.practice.advanced?tr(' の合成ログを反映しました。過去ログと集計で調査してください。\n'):tr(' の合成ログを反映しました。\n正常ログは /baseline/var/log/ 以下に残っています。\n')),stderr:''};
     cs.entries.push(entry);cs.entries=cs.entries.slice(-60);appendEntry(entry);
     $('terminal-output').scrollTop=$('terminal-output').scrollHeight;
     $('last-exit').textContent=tr(tr('攻撃ログを反映'));$('last-exit').className='';save();
@@ -117,19 +133,21 @@
   function welcome() {
     const wrap = node('div','terminal-welcome');
     wrap.append(node('strong','', tr('Logroom / ログ分析ターミナル')));
-    wrap.append(document.createTextNode(tr`\n${currentCase.title}\n${cs.attackApplied?tr('攻撃後ログ'):tr('正常ログ')}を読み込みました。時刻はUTCです。\n\nまず ${currentCase.initialCommand} を入力してください。\n${cs.attackApplied?tr('正常ログとの比較は diff -u /baseline/元のパス 元のパス。'):tr('正常なログを調べたら「攻撃ログを生成」を押してください。')}\nhelp で対応コマンド、help grep で使い方を確認できます。\nこの端末は学習用シミュレーターです。\n`));
+    wrap.append(document.createTextNode('\n'+currentCase.title+'\n'+tr(cs.attackApplied?'攻撃後ログ':'正常ログ')+'\n'+(currentCase.clockNote||'')+'\n\n'+tr`まず ${currentCase.initialCommand} を入力してください。`+'\n'+tr(state.practice.advanced?'実践モード：正常コピーなし。過去ログ・集計・sudoを使って調べます。SSHは2万行以上です。':cs.attackApplied?'正常ログとの比較は diff -u /baseline/元のパス 元のパス。':'正常なログを調べたら「攻撃ログを生成」を押してください。')+'\n'+tr('help で対応コマンドと実機との違いを確認できます。')+'\n'));
     return wrap;
   }
+  const displayCwd=cwd=>cwd==='/home/analyst'?'~':cwd.startsWith('/home/analyst/')?'~'+cwd.slice(13):cwd;
+  const hostname=()=>String(shell.files['/etc/hostname']||'logroom').trim();
   function appendEntry(entry) {
     const block = node('div','terminal-block');
-    block.append(node('pre','terminal-command',`analyst@logroom:${entry.cwd || '/home/analyst'}$ ${entry.command}`));
+    block.append(node('pre','terminal-command',`analyst@${hostname()}:${displayCwd(entry.cwd || '/home/analyst')}$ ${entry.command}`));
     if (entry.stdout) block.append(node('pre','terminal-result',entry.stdout));
     if (entry.stderr) block.append(node('pre','terminal-error',entry.stderr));
     $('terminal-output').append(block);
   }
   function renderTerminal() {
     $('terminal-output').replaceChildren(welcome()); cs.entries.forEach(appendEntry);
-    $('terminal-cwd').textContent = tr(shell.cwd);
+    $('terminal-cwd').textContent = displayCwd(shell.cwd);$('terminal-hostname').textContent='analyst@'+hostname();
     $('terminal-output').scrollTop = $('terminal-output').scrollHeight;
   }
   function persistFiles() {
@@ -137,6 +155,7 @@
     const canonical = activeFiles();
     for (const [path,text] of Object.entries(shell.files)) if (typeof text === 'string' && canonical[path] !== text) cs.edits[path] = text;
     for (const path of Object.keys(canonical)) if (!(path in shell.files)) cs.edits[path] = null;
+    cs.metadata=JSON.parse(JSON.stringify(shell.metadata));
     cs.cwd = shell.cwd;
     cs.directories = shell.directories instanceof Set ? [...shell.directories] : [];
   }
@@ -155,14 +174,14 @@
     if (result.clear) { cs.entries = []; $('terminal-output').replaceChildren(); }
     else {cs.entries.push(entry);cs.entries = cs.entries.slice(-60);appendEntry(entry);}
     while ($('terminal-output').children.length > 61) $('terminal-output').firstElementChild.remove();
-    $('terminal-cwd').textContent = tr(shell.cwd);
+    $('terminal-cwd').textContent = displayCwd(shell.cwd);$('terminal-hostname').textContent='analyst@'+hostname();
     $('terminal-output').scrollTop = $('terminal-output').scrollHeight;
     $('last-exit').textContent = tr(tr`終了コード ${result.code}`);
     $('last-exit').classList.toggle('bad-exit',Boolean(stderr) || result.code > 1);
     $('last-exit').classList.toggle('informational-exit',result.code === 1 && !stderr);
     $('last-exit').title = result.code === 1 && !stderr ? tr('grepの一致なし、diffの差分ありなどでも終了コード1になります。') : '';
     $('command-input').value = '';
-    persistFiles(); save();
+    persistFiles(); renderArtifactTask(); save();
     if (result.pager && !stderr) openPager(stdout,input);
     if (result.editor && !stderr) openVi(result.editor);
     if (result.train && !stderr) startTrain(entry);
@@ -211,6 +230,9 @@
       ev.append(b,node('pre','',e.quote)); wrap.append(ev);
     }); return wrap;
   }
+  function observedEvidence(task) {
+    return (task.evidence||[]).some(e=>cs.entries.some(entry=>entry.stdout && /\b(cat|grep|rg|awk|sed|head|tail|less|more|zcat|zgrep|zless|cut|wc|sort)\b/.test(entry.command) && (entry.command.includes(e.path)||entry.stdout.includes(e.quote))));
+  }
   function renderTasks() {
     const list = $('task-list'); list.replaceChildren();
     currentCase.tasks.forEach((task,i) => {
@@ -223,7 +245,7 @@
       input.disabled = !cs.attackApplied;
       input.setAttribute('aria-label',tr`${task.label}の解答`); input.spellcheck = false; input.autocomplete = 'off';
       const fb = node('p','feedback'); fb.setAttribute('aria-live','polite');
-      if (correct) {fb.classList.add('success'); fb.textContent = tr(cs.viewed.includes(task.id)?tr('正解です（解答前に解説を閲覧）。'):tr('正解です。根拠の行も確認しましょう。'));}
+      if (correct) {fb.classList.add('success'); fb.textContent = !observedEvidence(task)?tr('正解です。対象ログを読むコマンドを実行して、根拠を確認しましょう。'):tr(cs.viewed.includes(task.id)?tr('正解です（解答前に解説を閲覧）。'):tr('正解です。根拠の行も確認しましょう。'));}
       else if (cs.feedback[task.id] === 'incorrect') {fb.classList.add('error');fb.textContent = tr(tr('まだ一致しません。設問の形式とログの根拠を確認してください。'));input.setAttribute('aria-invalid','true');}
       input.addEventListener('input',() => {
         cs.answers[task.id] = input.value;
@@ -263,6 +285,18 @@
       list.append(card);
     });
   }
+  function renderArtifactTask() {
+    const target=$('artifact-task');target.replaceChildren();target.hidden=currentCase.id!=='ssh';
+    if(target.hidden)return;
+    const expected=practice.timeline(currentCase), valid=cs.attackApplied&&practice.checkTimeline(currentCase,shell.files);
+    target.append(node('h3','',tr('実技：調査結果をファイルに残す')),node('p','',tr`対象IP ${expected.ip} の全イベントを現在のauth.logから抽出し、月・日・時刻順で ${expected.path} に保存してください。元の行をそのまま残します。`));
+    target.append(node('p','muted',tr('grep、sort -k1,1M -k2,2n -k3,3、> または tee を組み合わせます。同時刻の行は全文の文字順に並べます。')));
+    const check=node('button','button',tr('提出ファイルを確認'));check.type='button';check.disabled=!cs.attackApplied;
+    check.addEventListener('click',()=>{cs.artifactChecked=true;renderArtifactTask();save();});
+    const feedback=node('p','feedback'+(valid?' success':''));feedback.setAttribute('aria-live','polite');
+    if(cs.artifactChecked)feedback.textContent=tr(valid?'提出ファイルを確認しました。全イベントが時刻順に保存されています。':'対象の全行、順序、保存先を確認してください。');
+    target.append(check,feedback);
+  }
   function renderReference() {
     const target = $('command-reference');target.replaceChildren();
     const commands = shell.supportedCommands || [];
@@ -284,13 +318,14 @@
       [tr('viで調査メモを書く'),tr('iで挿入モード、Escで通常モード、:wqで保存して閉じます。ファイルは演習内に保存されます。'),['vi /home/analyst/investigation.txt',`view ${primary}`]],
     ];
     if (json) groups.push([tr('JSONログを読む'),tr('jqでJSON/JSONLを整形し、キーを取り出せます。対応する式は help jq で確認できます。'),[`jq '.' ${json} | head -n 20`,`jq -c '.' ${json} | head -n 5`]]);
+    if(state.practice.advanced)groups.splice(groups.findIndex(group=>group[0]===tr('正常時との差分を見る')),1);
     groups.forEach(([title,desc,commands]) => {const group = node('div','reference-group');group.append(node('h3','',title),node('p','',desc));commands.forEach(c=>group.append(commandButton(c)));target.append(group);});
   }
   function selectCase(id) {
     if(trainActive)return;
     currentCase = cases.find(c=>c.id===id) || cases[0];state.caseId = currentCase.id;
-    cs = hydrateCase(state.cases[currentCase.id]);state.cases[currentCase.id] = cs;
-    shell = new globalThis.LogLabShell(activeFiles());
+    cs = hydrateCase(state.cases[currentCase.id]);if(state.practice.advanced)cs.attackApplied=true;state.cases[currentCase.id] = cs;
+    shell = new globalThis.LogLabShell(activeFiles(),{groups:state.practice.advanced?['analyst']:['analyst','adm'],metadata:cs.metadata});
     Object.entries(cs.edits).forEach(([path,text])=> {if (!path.startsWith('/')) return;if (text === null) delete shell.files[path];else if (typeof text === 'string') shell.files[path] = text;});
     if (shell.directories instanceof Set) cs.directories.filter(x=>typeof x==='string' && x.startsWith('/')).forEach(x=>shell.directories.add(x));
     if (cs.cwd && (shell.directories instanceof Set && shell.directories.has(cs.cwd))) shell.cwd = cs.cwd;
@@ -301,7 +336,7 @@
     $('initial-command').onclick = () => insertCommand(currentCase.initialCommand);
     $('notes').value = cs.notes;$('command-input').value='';$('last-exit').textContent=tr(tr('準備完了'));$('last-exit').className='';
     $('walkthrough-list').replaceChildren(...currentCase.walkthrough.map((w,i)=> {const step = node('div','walk-step');step.append(node('h4','',`${i+1}. ${w.title}`),commandButton(w.command),node('p','',w.explanation));return step;}));
-    renderMode();renderNav();renderTerminal();renderTasks();renderProgress();renderReference();applyLayout();save();
+    renderMode();renderNav();renderTerminal();renderTasks();renderArtifactTask();renderProgress();renderReference();applyLayout();save();
   }
   function setTab(name) {
     activeTab = name;
@@ -359,7 +394,7 @@
   $('guide-open').addEventListener('click',()=>$('guide-dialog').showModal());
   $('apply-attack').addEventListener('click',applyAttack);
   $('case-reset').addEventListener('click',()=>$('reset-dialog').showModal());
-  $('reset-confirm').addEventListener('click',()=> {state.cases[state.caseId]=makeCaseState();$('reset-dialog').close();selectCase(state.caseId);toast(tr('選択中の演習をサラの正常状態に戻しました。'));});
+  $('reset-confirm').addEventListener('click',()=> {state.cases[state.caseId]=makeCaseState();$('reset-dialog').close();selectCase(state.caseId);toast(tr(state.practice.advanced?'この設定の初期状態に戻しました。':'選択中の演習をサラの正常状態に戻しました。'));});
   function doomPhase(phase){
     $('doom-dialog').dataset.phase=phase;
     $('app-shell').classList.toggle('doom-collapsing',phase==='collapse');
@@ -409,7 +444,7 @@
   $('doom-dialog').addEventListener('cancel',e=>{e.preventDefault();finishRootGameOver();});
   $('export-report').addEventListener('click',()=> {
     const progress=currentCase.tasks.map((t,i)=>tr`${i+1}. ${t.label}\n解答：${cs.answers[t.id] || tr('未入力')}\n判定：${cs.solved.includes(t.id)?tr('正解'):tr('未正解')}`).join('\n\n');
-    const text=tr`Logroom 調査メモ\n${currentCase.title}\n状態：${cs.attackApplied?tr('攻撃後ログ'):tr('正常ログ')}\nログ時刻：UTC / データは架空\n書き出し：${new Date().toLocaleString(state.locale)}\n\n調査メモ\n${cs.notes || tr('（メモはまだありません）')}\n\n設問への解答\n${progress}\n\nコマンド履歴\n${cs.history.join('\n')}\n`;
+    const text=(currentCase.clockNote||'')+'\n'+tr`Logroom 調査メモ\n${currentCase.title}\n状態：${cs.attackApplied?tr('攻撃後ログ'):tr('正常ログ')}\nデータは架空 / 時刻の前提は冒頭参照\n書き出し：${new Date().toLocaleString(state.locale)}\n\n調査メモ\n${cs.notes || tr('（メモはまだありません）')}\n\n設問への解答\n${progress}\n\nコマンド履歴\n${cs.history.join('\n')}\n`;
     const blob=new Blob([text],{type:'text/plain;charset=utf-8'}), url=URL.createObjectURL(blob), a=node('a');
     a.href=url;a.download=`logroom-${currentCase.id}-notes.txt`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast(tr('調査メモを書き出しました。'));
   });
@@ -547,10 +582,10 @@
   $('terminal-height').addEventListener('input',e=>{state.ui.height=Number(e.target.value);applyLayout();save();});
   $('layout-reset').addEventListener('click',()=>{state.ui={panelHidden:false,width:62,height:null};applyLayout();save();});
   let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(applyLayout,70);});
-  const commandDescriptions={help:'使い方',pwd:'現在のディレクトリ',cd:'ディレクトリ移動',ls:'ファイル一覧',find:'ファイル検索',cat:'ファイル表示',tac:'行を逆順に表示',less:'ページ表示・検索',more:'ページ表示',head:'先頭の行・バイト',tail:'末尾の行・バイト',nl:'行番号を付ける',grep:'行を検索・抽出',rg:'複数ファイルの検索',awk:'列の抽出・条件・集計',sed:'行や文字の編集',cut:'列の抽出',sort:'並べ替え',uniq:'重複の比較・件数',wc:'行数・文字数・幅',tr:'文字の変換・削除',column:'表の列を整える',diff:'ファイルの差分',jq:'JSONの抽出・集計',base64:'Base64の符号化・復号',tee:'表示しながら保存',echo:'文字列を出力',printf:'書式を指定して出力',paste:'ファイルの列を結合',comm:'整列済みファイルの比較',join:'キーでファイルを結合',xargs:'入力を仮想コマンドの引数にする',rev:'各行の文字を逆順にする',strings:'表示可能な文字列を抽出',basename:'パスからファイル名を取り出す',dirname:'親のパスを取り出す',realpath:'絶対パスに直す',file:'仮想ファイルの種類',stat:'サイズなどの仮想情報',du:'ファイルの使用量を集計',date:'日時の表示・変換',clear:'画面を消去',history:'コマンド履歴',mkdir:'ディレクトリ作成',touch:'空ファイル作成',cp:'ファイルのコピー',mv:'移動・名前の変更',rm:'仮想ファイル削除',rmdir:'空ディレクトリ削除',vi:'仮想ファイルの編集',view:'viで読み取り専用表示',sl:'蒸気機関車が通過（中断不可）'};
+  const commandDescriptions={sudo:'仮想管理者権限で実行',zcat:'圧縮ログを読む',zgrep:'圧縮ログを検索',zless:'圧縮ログを閲覧',whoami:'実行ユーザー',id:'ユーザーとグループ',hostname:'ホスト名',man:'演習用ヘルプを閲覧',which:'仮想コマンドの場所',help:'使い方',pwd:'現在のディレクトリ',cd:'ディレクトリ移動',ls:'ファイル一覧',find:'ファイル検索',cat:'ファイル表示',tac:'行を逆順に表示',less:'ページ表示・検索',more:'ページ表示',head:'先頭の行・バイト',tail:'末尾の行・バイト',nl:'行番号を付ける',grep:'行を検索・抽出',rg:'複数ファイルの検索',awk:'列の抽出・条件・集計',sed:'行や文字の編集',cut:'列の抽出',sort:'並べ替え',uniq:'重複の比較・件数',wc:'行数・文字数・幅',tr:'文字の変換・削除',column:'表の列を整える',diff:'ファイルの差分',jq:'JSONの抽出・集計',base64:'Base64の符号化・復号',tee:'表示しながら保存',echo:'文字列を出力',printf:'書式を指定して出力',paste:'ファイルの列を結合',comm:'整列済みファイルの比較',join:'キーでファイルを結合',xargs:'入力を仮想コマンドの引数にする',rev:'各行の文字を逆順にする',strings:'表示可能な文字列を抽出',basename:'パスからファイル名を取り出す',dirname:'親のパスを取り出す',realpath:'絶対パスに直す',file:'仮想ファイルの種類',stat:'サイズなどの仮想情報',du:'ファイルの使用量を集計',date:'日時の表示・変換',clear:'画面を消去',history:'コマンド履歴',mkdir:'ディレクトリ作成',touch:'空ファイル作成',cp:'ファイルのコピー',mv:'移動・名前の変更',rm:'仮想ファイル削除',rmdir:'空ディレクトリ削除',vi:'仮想ファイルの編集',view:'viで読み取り専用表示',sl:'蒸気機関車が通過（中断不可）'};
   const optionNotes={
     grep:[['-i / -v','大文字小文字を無視 / 非一致の行'],['-n / -c / -l / -L','行番号 / 件数 / 一致ファイル / 非一致ファイル'],['-E / -F','拡張正規表現 / 固定文字列'],['-r / -R','仮想ディレクトリの再帰検索'],['-A N / -B N / -C N','一致行の後 / 前 / 前後も表示'],['-m N / -e PATTERN','一致をN行まで / パターンを指定'],['--include / --exclude / --exclude-dir','検索対象・除外するファイルやディレクトリのパターン']],
-    sort:[['-n / -r','数値順 / 逆順'],['-u / -s / -c','同じキーをまとめる / 同値の順序維持 / 整列済みか確認'],['-f / -b','大文字小文字を無視 / 先頭空白を無視'],['-k N,M / -t CHAR','並べ替える列の範囲 / 区切り文字']],
+    sort:[['-M / 複数の-k','月名順 / 複数キーで比較'],['-n / -r','数値順 / 逆順'],['-u / -s / -c','同じキーをまとめる / 同値の順序維持 / 整列済みか確認'],['-f / -b','大文字小文字を無視 / 先頭空白を無視'],['-k N,M / -t CHAR','並べ替える列の範囲 / 区切り文字']],
     uniq:[['-c / -d / -u','件数 / 重複した行 / 1回だけの行'],['-i / -f N / -s N','大小文字を無視 / 先頭N列を無視 / 先頭N文字を無視']],
     head:[['-n N / -c N','先頭N行 / 先頭Nバイト']],tail:[['-n N / -c N','末尾N行 / 末尾Nバイト'],['-n +N / -c +N','N行目 / Nバイト目から表示']],
     wc:[['-l / -w / -c / -m / -L','改行数 / 単語数 / バイト数 / 文字数 / 最長行幅']],
@@ -558,11 +593,11 @@
     awk:[['-F REGEX','入力の列区切り'],['-v NAME=VALUE','変数の初期値'],['BEGIN {FS="..."; OFS="..."}','入力・出力区切りの初期設定']],
     sed:[['-n / -E','自動表示を止める / 拡張正規表現'],['-e SCRIPT','編集処理を指定（複数可）'],['-i[SUFFIX]','仮想ファイルを直接更新（任意のバックアップ接尾辞）'],['Np / N,Mp / /PATTERN/p / d','行を表示 / 範囲を表示 / 検索して表示 / 削除']],
     find:[['-type f / -type d','ファイル / ディレクトリ'],['-name / -iname / -path','名前 / 大小文字を無視した名前 / パス'],['-maxdepth N / -mindepth N','検索の最大 / 最小の深さ']],
-    ls:[['-a / -l / -h','隠しファイル / 詳細 / 読みやすいサイズ'],['-d / -R / -S / -r','ディレクトリ自身 / 再帰 / サイズ順 / 逆順']],
+    ls:[['-t / --sort=time','更新時刻が新しい順'],['-a / -l / -h','隠しファイル / 詳細 / 読みやすいサイズ'],['-d / -R / -S / -r','ディレクトリ自身 / 再帰 / サイズ順 / 逆順']],
     jq:[['-r / -c / -s','文字列をそのまま / 1行に圧縮 / 全入力を配列にする']],
     vi:[['i / Esc','挿入 / 通常モード'],[':w / :wq / :q!','保存 / 保存して閉じる / 保存せず閉じる'],['/ / n / u / Ctrl+R','検索 / 次の一致 / 取り消し / やり直し']],
     view:[['ファイル名','存在する仮想ファイルを読み取り専用で開く']],
-    rm:[['-f','仮想ファイルを削除（存在しなくてもエラーにしない）'],['rm -rf /','GAME OVER演出後、選択中のケースを初期化。解答・メモ・履歴・作成ファイルも消去します。他のケースと画面設定は保持します。']],
+    rm:[['-f','仮想ファイルを削除（存在しなくてもエラーにしない）'],['--no-preserve-root（明示時のみ）','GAME OVER演出後、選択中のケースを初期化。解答・メモ・履歴・作成ファイルも消去します。他のケースと画面設定は保持します。']],
     sl:[['引数・オプションなし','約5秒間、機関車が通過します。Ctrl+Cでは止まらず、終了まで待ちます。進捗は保持します。']],
     xargs:[['-n N / -I TOKEN','実行ごとの引数数 / 置換用の印'],['-0 / -d CHAR / -r','NUL区切り / 指定文字区切り / 入力なしなら実行しない']],
   };
@@ -603,7 +638,7 @@
     const logs=section(tr('利用できるログ'),'');logs.lastElementChild.remove();
     (c.logSources||Object.keys(currentCase.files).filter(p=>p.startsWith('/var/log/')).map(path=>({path,description:tr('調査対象ログ')}))).forEach(l=>{const p=node('p');p.append(node('code','',l.path),node('span','',': '+l.description));logs.append(p);});
     if(c.assumptions?.length)section(tr('前提・ログから分かる範囲'),c.assumptions);
-    section(tr('操作の流れ'),tr('正常ログを確認 → 攻撃ログを生成 → 検索・集計・複数ログの照合 → 設問へ解答。/baseline以下には正常ログのコピーがあり、「サラの状態に戻す」でやり直せます。'));
+    section(tr('操作の流れ'),state.practice.advanced?tr('実践モード：正常コピーなし。過去ログ・集計・sudoを使って調べます。SSHは2万行以上です。'):tr('正常ログを確認 → 攻撃ログを生成 → 検索・集計・複数ログの照合 → 設問へ解答。/baseline以下には正常ログのコピーがあり、「サラの状態に戻す」でやり直せます。'));
   }
   $('context-open').addEventListener('click',()=>{renderContext();$('context-dialog').showModal();});
   $('debrief-open').addEventListener('click',()=>{
@@ -626,9 +661,30 @@
     clearTimeout(toastTimer);$('toast').hidden=true;
     const input=$('command-input'),pending=input.value,start=input.selectionStart,end=input.selectionEnd;
     persistFiles();state.locale=value;i18n.setLocale(value);
-    cases=i18n.localizeCases(baseCases);i18n.applyStatic(document);
+    cases=practice.variantCases(i18n.localizeCases(baseCases),state.practice);i18n.applyStatic(document);
     selectCase(state.caseId);setTab(activeTab);
     input.value=pending;input.setSelectionRange(start,end);save(true);
+  });
+  $('practice-mode').value=state.practice.advanced?'advanced':'basic';
+  $('practice-seed').value=state.practice.seed;
+  $('practice-apply').addEventListener('click',()=>{
+    if(doomActive||trainActive)return;
+    const next={advanced:$('practice-mode').value==='advanced',seed:$('practice-seed').value.normalize('NFKC').trim().slice(0,40)};
+    if(JSON.stringify(next)===JSON.stringify(state.practice))return;
+    persistFiles();state.sessions[profileKey()]=state.cases;
+    state.practice=next;state.cases=state.sessions[profileKey()]||{};
+    cases=practice.variantCases(i18n.localizeCases(baseCases),state.practice);
+    selectCase(state.caseId);save(true);toast(tr('演習設定を切り替えました。設定ごとに進捗を保存します。'));
+  });
+  $('export-logs').addEventListener('click',async()=>{
+    const button=$('export-logs');button.disabled=true;
+    try{
+      const exportId=currentCase.id,exportFiles={...shell.files};
+      const exportMetadata=Object.fromEntries(Object.keys(exportFiles).map(path=>[path,{...shell.getMetadata(path)}]));
+      const blob=await practice.logArchive(exportFiles,exportId,path=>exportMetadata[path]);
+      const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download=`logroom-${exportId}-logs.tar`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      toast(tr('ログを書き出しました。展開先で相対パスを使って再練習できます。'));
+    }catch(error){toast(tr('ログの書き出しに失敗しました。')+' '+error.message);}finally{button.disabled=false;}
   });
   window.addEventListener('pagehide',()=>save(true));
   selectCase(state.caseId);setTab(activeTab);

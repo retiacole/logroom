@@ -15,7 +15,7 @@
 | 項目 | 設定 |
 | --- | --- |
 | Repository name | `logroom` |
-| Description | ブラウザだけで使える、Linuxコマンドによるログ分析演習室。10ケース・104問・52コマンド。 |
+| Description | ブラウザだけで使える、Linuxコマンドによるログ分析演習室。10ケース・104問・61コマンド。 |
 | Visibility | Public |
 | README・.gitignore・Licenseの自動追加 | オフ。この一式に含まれています |
 

@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..');
 const {render}=require('../scripts/build.js');
 for(const name of ['shell.js','cases.js','cases-extra.js','case-context.js','case-reading-a.js','case-reading-b.js'])require('../src/'+name);
 const cases=globalThis.LOG_LAB_CASES,commands=globalThis.LogLabShell.supportedCommands;
-assert.equal(cases.length,10);assert.equal(cases.reduce((n,c)=>n+c.tasks.length,0),104);assert.equal(commands.length,52);
+assert.equal(cases.length,10);assert.equal(cases.reduce((n,c)=>n+c.tasks.length,0),104);assert.equal(commands.length,61);
 let references=0;
 for(const c of cases){
   assert.ok(c.baselineFiles&&c.attack&&c.context&&c.debrief,c.id);
@@ -15,13 +15,13 @@ for(const c of cases){
 }
 assert.equal(references,34);
 const built=render(),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-assert.equal(html,built,'index.html is stale: run npm run build');
-for(const target of ['dist/index.html','dist/logroom.html'])assert.equal(fs.readFileSync(path.join(root,target),'utf8'),built,target);
+assert.ok(html===built,'index.html is stale: run npm run build');
+for(const target of ['dist/index.html','dist/logroom.html'])assert.ok(fs.readFileSync(path.join(root,target),'utf8')===built,target+' is stale: run npm run build');
 assert.ok(Buffer.byteLength(html)<2000000,'three offline language packs should remain below 2 MB');
 assert.ok(html.includes("connect-src 'none'"));
 assert.ok(!/<(?:script|link|img)[^>]+\b(?:src|href)=["']https?:/i.test(html));
 const shell=new globalThis.LogLabShell();
-assert.equal(shell.run('sl').train,true);assert.equal(shell.run('rm -rf /').gameOver,true);
+assert.equal(shell.run('sl').train,true);assert.equal(shell.run('rm -rf /').gameOver,undefined);assert.equal(shell.run('rm -rf --no-preserve-root /').gameOver,true);
 const guide=fs.readFileSync(path.join(root,'docs/COMMANDS.md'),'utf8');
 for(const c of commands)assert.ok(guide.includes('`'+c+'`'),c+' missing from command guide');
 assert.ok(fs.readFileSync(path.join(root,'LICENSE'),'utf8').startsWith('MIT License'));

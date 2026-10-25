@@ -5,7 +5,7 @@
   const commonAssumptions = [
     'すべてLinux系サービスの記録を模した合成データです。実際のOS、Web・SSH・DNS・メール等のサーバーは起動していません。端末はブラウザ内の仮想ファイルとコマンドの対応範囲で動作します。',
     '「通常」「攻撃ログを再現」は用意した静的ログを切り替える操作です。外部通信、実際の攻撃、ログ内のコマンド実行は発生しません。IPアドレス・ドメイン・アカウントも教材用です。',
-    '提供ログの時刻はすべてUTCです。末尾のZとアクセスログの+0000はUTCを表し、日本時間へ直す場合は9時間を加えます。',
+    '時刻表記はログごとに確認します。Zと+0000はUTC、+0900は日本時間です。年やタイムゾーンが省略されたsyslogはREADMEの採取条件で補い、照合前にUTCへそろえます。',
     '資料にないサーバーIP、製品バージョン、物理的な配置、権限の全範囲は未確認として扱います。ホスト名、送信元IP、要求ID等は、それぞれ何を指すかを確認して照合してください。',
     '要求の存在、HTTP応答、アプリの処理結果、後続イベントは別の観測です。ひとつの行だけで結論を広げず、通常ログとの違いと複数ログの一致を根拠にします。'
   ];
@@ -40,7 +40,7 @@
       hosts: [
         { name: 'log-hub-01', role: '異なるサービスの記録をまとめて調べる演習上の収集ホスト', address: serverAddress, services: ['収集済みログの参照'] },
         { name: 'proxy-01', role: '端末のHTTP通信を仲介するプロキシのログ上のホスト', address: serverAddress, services: ['HTTPプロキシ監査'] },
-        { name: 'dns-01', role: '名前解決の問い合わせと回答を記録するホスト', address: serverAddress, services: ['DNS（named形式の正規化ログ）'] },
+        { name: 'dns-01', role: '名前解決の問い合わせと回答を記録するホスト', address: serverAddress, services: ['DNS（教材独自のnormalized_dns形式）'] },
         { name: 'mail-01', role: 'SMTP認証、キュー受付、配送を記録するメールホスト', address: serverAddress, services: ['SMTP submission', 'Postfix形式のキュー・配送記録'] }
       ],
       network: '同じ社内端末が、DNSへ名前を問い合わせ、プロキシ経由でHTTP通信し、メールサーバーへ送信する設定です。3つの経路は同一の接続ではないため、送信元IPと時刻、宛先の関係を確かめて結び付けます。ログ収集ホスト名と各サービスのホスト名も区別します。',
@@ -51,7 +51,7 @@
       ],
       assumptions: [
         'この演習では送信元IPを端末の照合に使います。共有NATやアドレスの再割り当て等の追加情報は提供されていません。',
-        'bytes_outは端末から外向きのバイト数、bytes_inは応答側のバイト数です。通信内容やその機密性はログに含まれません。',
+        'bytes_outは端末から外向き、bytes_inは応答側のHTTPメッセージのバイト数（本文とHTTPヘッダー、TLS/TCP/IP分は除外）です。プロキシもnormalized_dnsも教材独自の正規化形式です。BINDの生ログやSquid標準項目とは異なり、DNS回答は計測情報をまとめた値です。通信本文や機密性は分かりません。',
         'DNS回答だけでは接続成功を示しません。SMTPのstatus=sentと相手の受付応答は配送先による受付までの観測であり、閲覧や添付内容の確認ではありません。'
       ]
     },
@@ -204,7 +204,7 @@
       stages: [
         { title: '名前解決を通信の入口として確認する', detail: '最初の関連記録は11:15:02 UTCのDNS問い合わせです。archive-sync.exampleの回答198.51.100.202と、メール中継用mx.archive-sync.exampleの198.51.100.203を別の宛先として読みます。' },
         { title: 'SMTP認証から配送まで追う', detail: '同じ端末はsvc-reportsでSMTP認証し、C6D71A20F1に登録されたメールをdrop@archive-sync.exampleへ配送しています。size=846120とdelay=1.2は別の量で、status=sentと250応答は配送先による受付を示します。' },
-        { title: 'HTTPの送信量を条件をそろえて集計する', detail: '11:20:05〜11:23:05の対象POSTは4件で、bytes_outは各262144、計1048576バイトです。GET /health、社内メトリクス、応答のbytes_inを混ぜず、送信元・ホスト・メソッド・パスをそろえて数えます。' },
+        { title: 'HTTPの送信量を条件をそろえて集計する', detail: '11:20:05〜11:23:05の対象POSTは4件で、bytes_outは196608・327680・286720・237568で、計1048576バイトです。GET /health、社内メトリクス、応答のbytes_inを混ぜず、送信元・ホスト・メソッド・パスをそろえて数えます。' },
         { title: '相関が示す範囲を明確にする', detail: '送信元、宛先名、時刻の整合から複数経路の活動を関連付けられます。ただし、メールサイズとHTTP送信量が同じ内容を表すか、機密情報を含むか、正当な同期処理かは不明です。' }
       ],
       cause: 'この記録だけでは端末侵害、認証情報悪用、許可された業務送信のどれかは未確定です。未知の外部宛先とサービス用認証の利用は調査の手掛かりですが、それ自体を脆弱性や漏えいの原因と断定しません。',
@@ -322,6 +322,8 @@
   const descriptions = {
     '/home/analyst/README.txt': '演習の概要と操作説明。監査イベントではない補助資料です。',
     '/etc/hostname': '演習端末またはログ収集ホストの名前。各ログを出力したサーバー名とは別の場合があります。',
+    '/var/log/auth.log.1': '8月11日のローテート済み認証ログ。/baselineの同期間の正常比較用とは異なる過去日の保存分です。',
+    '/var/log/auth.log.2.gz': '8月9日の圧縮履歴を模した認証ログ。年は2026年、TZはUTC。zcat / zgrepで読みます。実装は展開済み文字列です。',
     '/var/log/auth.log': 'SSH認証、セッション、sudo、定期処理の認証系記録。接続元・ユーザー・時刻・実行内容を確認します。',
     '/var/log/nginx/access.log': 'HTTP要求と応答。送信元、要求されたURL、ステータス、応答サイズ、request_idを確認します。',
     '/var/log/app/audit.log': 'アプリの処理判定と業務イベントを記録したテキスト監査。HTTP結果との照合に使います。',
@@ -329,7 +331,7 @@
     '/var/log/db/query.log': '正規化したDB監査。接続主体、検索方式、クエリ構造、参照・返却行数、要求IDを確認します。',
     '/var/log/process/exec.log': '正規化したプロセス監査。exec/exit、pid/ppid、実行ファイル、ユーザー、要求IDを確認します。',
     '/var/log/proxy/access.log': 'HTTPプロキシの通信記録。送信元、宛先、メソッド、通信量、結果を確認します。',
-    '/var/log/named/query.log': 'DNS問い合わせと回答の正規化記録。問い合わせ端末、qname、レコード種別、回答を確認します。',
+    '/var/log/named/query.log': '教材独自のnormalized_dns形式。BIND namedの生ログではなく、問い合わせと回答の計測情報をまとめた正規化記録。問い合わせ端末、qname、レコード種別、回答を確認します。',
     '/var/log/mail.log': 'SMTP受付、認証ユーザー、キュー登録、配送結果。キューIDで同じメールを追跡します。',
     '/var/log/audit/file.log': '正規化したファイル操作監査。stat/read、実行ユーザー、参照パス、成否、読取バイト数、要求IDを確認します。',
     '/var/log/session/events.log': 'セッションの発行・検証・失効の記録。アカウント、セッションID、結果、要求IDをアプリ監査と照合します。',
@@ -340,10 +342,12 @@
   const periodFor = item => {
     const timestamps = [];
     for (const [path, text] of Object.entries(item.files || {})) {
-      if (!(item.logPaths || []).includes(path) && !path.startsWith('/var/log/')) continue;
+      if (!(item.logPaths || []).includes(path)) continue;
       for (const match of String(text).matchAll(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g)) timestamps.push(match[0]);
       const months = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12' };
-      for (const m of String(text).matchAll(/\[(\d{2})\/(\w{3})\/(\d{4}):(\d{2}:\d{2}:\d{2}) \+0000\]/g)) if (months[m[2]]) timestamps.push(`${m[3]}-${months[m[2]]}-${m[1]}T${m[4]}Z`);
+      for (const m of String(text).matchAll(/\[(\d{2})\/(\w{3})\/(\d{4}):(\d{2}:\d{2}:\d{2}) ([+-]\d{4})\]/g)) if (months[m[2]]) timestamps.push(new Date(`${m[3]}-${months[m[2]]}-${m[1]}T${m[4]}${m[5].slice(0, 3)}:${m[5].slice(3)}`).toISOString());
+      // The SSH fixture's collection notes supply 2026 and UTC omitted by traditional syslog.
+      if (item.id === 'ssh') for (const m of String(text).matchAll(/^(\w{3}) +([0-9]{1,2}) (\d{2}:\d{2}:\d{2}) /gm)) if (months[m[1]]) timestamps.push(`2026-${months[m[1]]}-${m[2].padStart(2, '0')}T${m[3]}Z`);
     }
     timestamps.sort();
     if (!timestamps.length) return '提供資料に記載された期間（UTC）。日本時間は+9時間です。';
