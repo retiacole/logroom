@@ -1,8 +1,15 @@
+<p align="center">
+  <img src="docs/images/logroom-banner.png" width="960" alt="草原で冒険するLogroomのキャラクターを描いたピクセルアート">
+</p>
+
 # Logroom
 
 [日本語](README.md) · [English](README.en.md) · [ไทย](README.th.md)
 
-このアプリとドキュメントは、OpenAI Codex（AI）を使って作成しました。内容の確認・修正・更新は、プロジェクトのメンテナーが行います。
+<img src="docs/images/logroom-character.png" align="right" width="120" alt="剣と盾を持つLogroomのキャラクター">
+
+**ログを読み、証拠をつなぐ。**<br>
+*Read the logs. Follow the evidence.*
 
 [ブラウザで使う](https://retiacole.github.io/logroom/) · [HTML 1個をダウンロード](https://github.com/retiacole/logroom/releases/latest/download/logroom.html)
 
@@ -11,6 +18,10 @@
 認証ログ、Webアクセスログ、アプリ監査、DNS・プロキシ・メールのログを、検索・集計・照合して調査します。正常な状態を観察し、ボタンで攻撃イベントを反映し、証拠から設問に答えていきます。
 
 単独のHTMLファイルで動作します。管理者権限やLinux環境を用意できないWindows端末での自習、授業、社内研修を想定しています。
+
+<br clear="right">
+
+このアプリとドキュメントは、OpenAI Codex（AI）を使って作成しました。内容の確認・修正・更新は、プロジェクトのメンテナーが行います。
 
 ![Logroomのログ分析画面](docs/images/overview.png)
 

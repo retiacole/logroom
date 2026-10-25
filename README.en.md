@@ -1,14 +1,24 @@
+<p align="center">
+  <img src="docs/images/logroom-banner.png" width="960" alt="Pixel art of the Logroom character on an adventure across a grassy landscape">
+</p>
+
 # Logroom
 
 [日本語](README.md) · **English** · [ภาษาไทย](README.th.md)
 
-This app and its documentation were created with OpenAI Codex (AI). The project maintainers are responsible for reviewing, correcting, and maintaining the content.
+<img src="docs/images/logroom-character.png" align="right" width="120" alt="The Logroom character holding a sword and shield">
+
+**Read the logs. Follow the evidence.**
 
 [Open live demo](https://retiacole.github.io/logroom/) · [Download one HTML file](https://github.com/retiacole/logroom/releases/latest/download/logroom.html)
 
 **Practice log analysis with Linux-style commands, entirely in your browser.**
 
 Search, count, and correlate synthetic authentication, Web, application, DNS, proxy, and mail logs. Inspect normal activity, apply a prepared attack scenario with a button, and answer questions using the evidence you find. Logroom runs from one HTML file without installation, a backend, or a Linux environment.
+
+<br clear="right">
+
+This app and its documentation were created with OpenAI Codex (AI). The project maintainers are responsible for reviewing, correcting, and maintaining the content.
 
 ![Logroom with the English interface](docs/images/overview-en.png)
 

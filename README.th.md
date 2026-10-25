@@ -1,14 +1,24 @@
+<p align="center">
+  <img src="docs/images/logroom-banner.png" width="960" alt="ภาพพิกเซลอาร์ตของตัวละคร Logroom ในทุ่งหญ้า">
+</p>
+
 # Logroom
 
 [日本語](README.md) · [English](README.en.md) · **ภาษาไทย**
 
-แอปและเอกสารนี้สร้างขึ้นโดยใช้ OpenAI Codex (AI) ผู้ดูแลโครงการมีหน้าที่ตรวจสอบ แก้ไข และดูแลเนื้อหา
+<img src="docs/images/logroom-character.png" align="right" width="120" alt="ตัวละคร Logroom ถือดาบและโล่">
+
+**อ่านล็อก แล้วติดตามหลักฐาน**
 
 [เปิดใช้งานในเบราว์เซอร์](https://retiacole.github.io/logroom/) · [ดาวน์โหลด HTML ไฟล์เดียว](https://github.com/retiacole/logroom/releases/latest/download/logroom.html)
 
 **ฝึกวิเคราะห์ล็อกด้วยคำสั่งแบบ Linux ได้ในเบราว์เซอร์ทั้งหมด**
 
 ค้นหา นับ และเชื่อมโยงบันทึกจำลองของการยืนยันตัวตน เว็บ แอปพลิเคชัน DNS พร็อกซี และอีเมล เริ่มจากตรวจสอบกิจกรรมปกติ กดปุ่มเพื่อใช้สถานการณ์โจมตีที่เตรียมไว้ แล้วตอบคำถามจากหลักฐานที่พบ Logroom ใช้ไฟล์ HTML เพียงไฟล์เดียว ไม่ต้องติดตั้งโปรแกรม ไม่ต้องมีเซิร์ฟเวอร์เบื้องหลัง และไม่ต้องเตรียมระบบ Linux
+
+<br clear="right">
+
+แอปและเอกสารนี้สร้างขึ้นโดยใช้ OpenAI Codex (AI) ผู้ดูแลโครงการมีหน้าที่ตรวจสอบ แก้ไข และดูแลเนื้อหา
 
 ![Logroom ในภาษาไทย](docs/images/overview-th.png)
 
