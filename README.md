@@ -11,7 +11,7 @@
 **ログを読み、証拠をつなぐ。**<br>
 *Read the logs. Follow the evidence.*
 
-[ブラウザで使う](https://retiacole.github.io/logroom/) · [HTML 1個をダウンロード](https://github.com/retiacole/logroom/releases/latest/download/logroom.html)
+[すぐにやってみる](https://retiacole.github.io/logroom/) · [HTML 1個をダウンロード](https://github.com/retiacole/logroom/releases/latest/download/logroom.html)
 
 **インストール不要。ブラウザだけで、Linuxコマンドによるログ分析を練習する教材です。**
 

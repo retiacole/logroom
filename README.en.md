@@ -10,7 +10,7 @@
 
 **Read the logs. Follow the evidence.**
 
-[Open live demo](https://retiacole.github.io/logroom/) · [Download one HTML file](https://github.com/retiacole/logroom/releases/latest/download/logroom.html)
+[Play Now](https://retiacole.github.io/logroom/) · [Download one HTML file](https://github.com/retiacole/logroom/releases/latest/download/logroom.html)
 
 **Practice log analysis with Linux-style commands, entirely in your browser.**
 
