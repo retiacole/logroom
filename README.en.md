@@ -41,7 +41,7 @@ The exercises work offline. If organizational settings block local HTML files, t
 
 ## What you can practice
 
-- **10 cases and 104 questions**, including SSH authentication, SQL injection, command injection, path traversal, SSRF, uploads, and log tampering.
+- **10 original cases / 104 questions, plus 4 entry questions and 2 exit checks**, including SSH authentication, SQL injection, command injection, path traversal, SSRF, uploads, and log tampering.
 - **Practice mode** adds sudo, rotated logs, over 20,000 SSH log lines, seeded IP variants, a timeline file exercise and tar exports with real gzip history. Progress is stored per mode and seed.
 - **61 commands**, with common options, pipes, virtual-file output, JSON extraction, and basic `vi` editing. Use **Commands** or `help command` to check the supported syntax.
 - Context and server-topology descriptions, progressive hints, supporting log lines, and investigation walkthroughs.
@@ -78,3 +78,13 @@ The build bundles `src/` into the standalone `index.html`, `dist/index.html`, an
 <p align="center">
   <img src="docs/images/logroom-ending.png" width="100%" alt="The room series party sharing a meal at a tavern">
 </p>
+
+## Entry practice and graduation checks
+
+Case 0 uses six log lines to practice selecting records, extracting variable fields, counting and saving original evidence. Experienced learners can select any original case directly. General foundations are available before answering every case.
+
+The Web and DNS/proxy/mail cases include exit checks: select source-linked evidence and distinguish findings, unknowns and next checks. Short handoff notes are for self-comparison with examples; their meaning is not automatically graded. Original completion records remain valid. Completing the ten original cases and both exit checks shows an optional recommendation for pcaproom-easy. Continue reviewing or using practice mode in this room whenever you prefer. No automatic navigation or cross-room progress sharing occurs.
+
+The version at the top of the page comes from package.json and is identical in all three languages and offline HTML files.
+
+Each original case also has one optional concept check. Its response is saved separately and does not change original question counts or completion rules. The learning guide explains operation review, core investigation, attack-specific application and practice mode; the order remains your choice.

@@ -15,6 +15,7 @@ const tests = [
   'cases-test.js',
   'cases-extra-test.js',
   'i18n-test.js',
+  'curriculum-test.js',
   'release-check.js'
 ];
 

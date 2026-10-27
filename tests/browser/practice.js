@@ -14,6 +14,7 @@ const {gunzipSync}=require('node:zlib');
   const settings=async(mode,seed)=>{if(!await page.locator('.practice-settings').evaluate(el=>el.open))await page.locator('.practice-settings summary').click();await page.locator('#practice-mode').selectOption(mode);await page.locator('#practice-seed').fill(seed);await page.locator('#practice-apply').click();await flush();};
   try{
     await page.goto(pathToFileURL(path.resolve(__dirname,'../../index.html')).href);
+    await page.locator('#entry-skip').click();
     assert.equal(await page.locator('#terminal-hostname').innerText(),'analyst@edge-01');
     assert.equal(await page.locator('#terminal-cwd').innerText(),'~');
     await page.locator('#apply-attack').click();
@@ -33,7 +34,7 @@ const {gunzipSync}=require('node:zlib');
     assert.equal((await run('sudo zgrep -c "Failed password" /var/log/auth.log.2.gz')).stderr,'');
     const readme=(await run('cat ~/README.txt')).stdout;assert.ok(!readme.includes('/baseline'));
     assert.equal(await page.locator('#apply-attack').isDisabled(),true);
-    const ip=await page.evaluate(()=>LogroomPractice.variantCases(LOG_LAB_CASES,{seed:'95'})[0].tasks[0].answer);
+    const ip=await page.evaluate(()=>LogroomPractice.variantCases(LOG_LAB_CASES,{seed:'95'}).find(c=>c.id==='ssh').tasks[0].answer);
     assert.notEqual(ip,'198.51.100.73');
     assert.equal((await run(`sudo grep 'Failed password' /var/log/auth.log | grep '${ip}' | wc -l`)).stdout,'60\n');
     await run(`sudo grep '${ip}' /var/log/auth.log | sort -k1,1M -k2,2n -k3,3 > ~/timeline.txt`);

@@ -8,12 +8,13 @@ for (const source of [
   'cases', 'cases-extra', 'case-context', 'case-reading-a', 'case-reading-b'
 ]) require('../src/' + source + '.js');
 
-const cases = globalThis.LOG_LAB_CASES;
-const japaneseSnapshot = JSON.stringify(cases);
 for (const source of ['locales/ui', 'locales/cases-a', 'locales/cases-b', 'locales/cases-c', 'i18n']) {
   require('../src/' + source + '.js');
 }
 
+require('../src/curriculum.js');
+const cases = globalThis.LOG_LAB_CASES;
+const japaneseSnapshot = JSON.stringify(cases);
 const i18n = globalThis.LogroomI18n;
 const caseCatalog = globalThis.LOGROOM_CASE_TRANSLATIONS;
 const uiCatalog = globalThis.LOGROOM_UI_TRANSLATIONS;
@@ -98,8 +99,8 @@ function assertDisjoint(left, right, message) {
   for (const object of objectSet(right)) ok(!objects.has(object), message);
 }
 
-equal(cases.length, 10, 'all ten cases are loaded');
-equal(cases.reduce((count, c) => count + c.tasks.length, 0), 104, 'all 104 questions are loaded');
+equal(cases.length, 11, 'all eleven cases are loaded');
+equal(cases.reduce((count, c) => count + c.tasks.length, 0), 108, 'all 108 questions are loaded');
 equal(new Set(cases.map(c => c.id)).size, cases.length, 'case IDs are unique');
 equal(JSON.stringify(cases), japaneseSnapshot, 'loading catalogs must not mutate Japanese source');
 deepEqual(i18n.languages, ['ja', 'en', 'th'], 'supported languages');
@@ -112,7 +113,7 @@ for (const language of ['en', 'th']) {
   localizedByLanguage[language] = localized;
   deepEqual(Object.keys(caseCatalog[language]).sort(), cases.map(c => c.id).sort(), language + ': complete case catalog');
   equal(localized.length, cases.length, language + ': case count');
-  equal(localized.reduce((count, c) => count + c.tasks.length, 0), 104, language + ': question count');
+  equal(localized.reduce((count, c) => count + c.tasks.length, 0), 108, language + ': question count');
   for (let index = 0; index < cases.length; index++) {
     const base = cases[index];
     const actual = localized[index];
@@ -155,20 +156,20 @@ assertDisjoint(localizedByLanguage.en, localizedByLanguage.th, 'English and Thai
 // language, or a fresh localization. Include answers and log maps in this probe.
 const english = localizedByLanguage.en;
 const thaiSnapshot = JSON.stringify(localizedByLanguage.th);
-const originalEnglishTitle = english[0].title;
-english[0].title = 'CHANGED TEST TITLE';
-english[0].tasks[0].accepted.push('TEST ANSWER');
-english[0].tasks[0].evidence[0].quote = 'CHANGED EVIDENCE';
-english[0].tasks[0].hints[0].command = 'CHANGED COMMAND';
-english[0].context.hosts[0].services.push('CHANGED SERVICE');
-english[0].files[readmePath] = 'CHANGED README';
-english[0].baselineFiles['/var/log/auth.log'] = 'CHANGED LOG';
-english[0].debrief.references[0].url = 'https://example.invalid/test';
+const originalEnglishTitle = english[1].title;
+english[1].title = 'CHANGED TEST TITLE';
+english[1].tasks[0].accepted.push('TEST ANSWER');
+english[1].tasks[0].evidence[0].quote = 'CHANGED EVIDENCE';
+english[1].tasks[0].hints[0].command = 'CHANGED COMMAND';
+english[1].context.hosts[0].services.push('CHANGED SERVICE');
+english[1].files[readmePath] = 'CHANGED README';
+english[1].baselineFiles['/var/log/auth.log'] = 'CHANGED LOG';
+english[1].debrief.references[0].url = 'https://example.invalid/test';
 equal(JSON.stringify(cases), japaneseSnapshot, 'editing localized nested data must not alter Japanese source');
 equal(JSON.stringify(localizedByLanguage.th), thaiSnapshot, 'editing English must not alter Thai');
 const freshEnglish = i18n.localizeCases(cases, 'en');
-equal(freshEnglish[0].title, originalEnglishTitle, 'fresh localization is independent of previous mutations');
-assertProtectedData(cases[0], freshEnglish[0], 'freshEnglish.ssh');
+equal(freshEnglish[1].title, originalEnglishTitle, 'fresh localization is independent of previous mutations');
+assertProtectedData(cases[1], freshEnglish[1], 'freshEnglish.ssh');
 assertDisjoint(english, freshEnglish, 'repeated localizations must not share mutable references');
 
 // Both UI catalogs use the same Japanese keys and preserve positional tokens.
@@ -222,4 +223,4 @@ for (const value of ['fr', 'EN', 'TH', '', null, undefined, {}, ['en']]) {
 deepEqual(i18n.localizeCases(cases, 'unknown'), cases, 'invalid case locale falls back to source content');
 equal(JSON.stringify(cases), japaneseSnapshot, 'final Japanese source snapshot remains unchanged');
 
-console.log('i18n: ' + assertions + ' assertions passed; 10 cases / 104 questions; ' + caseTextCount + ' case text leaves per locale; ' + englishKeys.length + ' UI keys per locale; ' + verifiedLogCopies + ' unchanged log copies verified.');
+console.log('i18n: ' + assertions + ' assertions passed; 11 cases / 108 questions; ' + caseTextCount + ' case text leaves per locale; ' + englishKeys.length + ' UI keys per locale; ' + verifiedLogCopies + ' unchanged log copies verified.');

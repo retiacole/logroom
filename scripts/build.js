@@ -20,12 +20,15 @@ const modules = {
   LOCALE_A: 'locales/cases-a.js',
   LOCALE_B: 'locales/cases-b.js',
   LOCALE_C: 'locales/cases-c.js',
+  CURRICULUM: 'curriculum.js',
   PRACTICE: 'practice.js',
   APP: 'app.js'
 };
 
 function render() {
-  let html = fs.readFileSync(path.join(source, 'ui.html'), 'utf8');
+  const version = JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
+  if(!/^\d+\.\d+\.\d+$/.test(version))throw new Error('Invalid release version');
+  let html = fs.readFileSync(path.join(source, 'ui.html'), 'utf8').replaceAll('{{APP_VERSION}}',version);
   for (const [token, filename] of Object.entries(modules)) {
     const marker = `/*__${token}__*/`;
     if (html.split(marker).length !== 2) {

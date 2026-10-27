@@ -2,12 +2,13 @@
 (() => {
   const baseCases = globalThis.LOG_LAB_CASES;
   const practice = globalThis.LogroomPractice;
+  const curriculum = globalThis.LogroomCurriculum;
   const i18n = globalThis.LogroomI18n;
   const tr = (...args) => i18n.t(...args);
   let cases = baseCases;
   const $ = id => document.getElementById(id);
   const STORE_KEY = 'logroom.offline.v1';
-  const makeCaseState = () => ({attackApplied:false,answers:{},feedback:{},solved:[],hints:{},revealed:[],viewed:[],notes:'',history:[],entries:[],edits:{},metadata:{},directories:[]});
+  const makeCaseState = () => ({attackApplied:false,answers:{},feedback:{},solved:[],hints:{},revealed:[],viewed:[],notes:'',history:[],entries:[],edits:{},metadata:{},directories:[],concept:{answer:'',checked:false},exit:{evidence:[],answers:{},note:'',checked:false}});
   let state = {version:1,caseId:cases[0].id,cases:{}};
   let storageAvailable = true;
   try {
@@ -38,7 +39,7 @@
     return n;
   };
   const normalize = practice.normalizeAnswer;
-  const isCorrect = (task, value) => [task.answer,...(task.accepted || [])].some(a => normalize(a) === normalize(value));
+  const isCorrect = (task, value) => task.kind==='file' ? curriculum.gradeFile(task,value) : [task.answer,...(task.accepted || [])].some(a => normalize(a) === normalize(value));
   function hydrateCase(raw) {
     const s = {...makeCaseState(),...(raw || {})};
     // v0.1 stored attacked logs without a mode field. Preserve those saved sessions.
@@ -46,6 +47,9 @@
     for (const key of ['answers','feedback','hints','edits','metadata']) if (!s[key] || typeof s[key] !== 'object' || Array.isArray(s[key])) s[key] = {};
     for (const key of ['solved','revealed','viewed','history','entries','directories']) if (!Array.isArray(s[key])) s[key] = [];
     s.notes = typeof s.notes === 'string' ? s.notes : '';
+    s.concept={answer:typeof s.concept?.answer==='string'?s.concept.answer:'',checked:s.concept?.checked===true};
+    const exit=s.exit&&typeof s.exit==='object'?s.exit:{};
+    s.exit={evidence:Array.isArray(exit.evidence)?exit.evidence.filter(x=>typeof x==='string'):[],answers:exit.answers&&typeof exit.answers==='object'&&!Array.isArray(exit.answers)?exit.answers:{},note:typeof exit.note==='string'?exit.note:'',checked:exit.checked===true};
     s.history = s.history.filter(x => typeof x === 'string').slice(-100);
     s.entries = s.entries.filter(x => x && typeof x.command === 'string' && typeof x.stdout === 'string' && typeof x.stderr === 'string').slice(-60);
     return s;
@@ -77,7 +81,7 @@
   function baselineFiles(c = currentCase) { return c.baselineFiles || c.files; }
   function scenarioFiles(source) {
     const files={...source};
-    if(state.practice.advanced){const path='/home/analyst/README.txt';files[path]=tr('実践モード：正常コピーなし。過去ログ・集計・sudoを使って調べます。SSHは2万行以上です。')+'\n'+(currentCase.clockNote||'')+'\n\n'+(files[path]||'').split('\n').filter(line=>!line.includes('/baseline')).join('\n');}
+    if(state.practice.advanced&&!currentCase.entry){const path='/home/analyst/README.txt';files[path]=tr('実践モード：正常コピーなし。過去ログ・集計・sudoを使って調べます。SSHは2万行以上です。')+'\n'+(currentCase.clockNote||'')+'\n\n'+(files[path]||'').split('\n').filter(line=>!line.includes('/baseline')).join('\n');}
     return files;
   }
   function activeFiles() {
@@ -88,6 +92,10 @@
     return files;
   }
   function renderMode() {
+    $('apply-attack').hidden=Boolean(currentCase.entry);
+    $('entry-choice').hidden=!currentCase.entry;
+    $('debrief-open').textContent=tr(currentCase.entry?'ケースの解説を見る':'攻撃の詳しい解説を見る');
+    $('debrief-title').textContent=tr(currentCase.entry?'ケースの解説を見る':'攻撃の詳しい解説');
     $('reset-title').textContent=tr(state.practice.advanced?'この設定の初期状態に戻しますか？':'サラの正常状態に戻しますか？');
     $('reset-description').textContent=tr(state.practice.advanced?'この設定の解答・メモ・履歴・作成ファイルを消去し、攻撃を含む初期ログに戻します。他の設定は保持します。':'選択中の演習から攻撃ログを取り除き、正常ログだけに戻します。解答、メモ、履歴、仮想ファイルへの変更も消去します。他の演習は保持されます。');
     $('reset-confirm').textContent=tr(state.practice.advanced?'初期状態に戻す':'正常状態に戻す');
@@ -97,9 +105,10 @@
     $('apply-attack').disabled = cs.attackApplied;
     $('apply-attack').textContent = tr(cs.attackApplied ? tr('攻撃ログ適用済み') : tr('攻撃ログを生成'));
     $('baseline-notice').hidden = cs.attackApplied || state.practice.advanced;
-    $('walkthrough').hidden = !cs.attackApplied;
+    $('walkthrough').hidden = !cs.attackApplied||!currentCase.walkthrough.length;
     if (!cs.attackApplied) $('walkthrough').open = false;
     $('briefing-content').replaceChildren(node('p','',cs.attackApplied?tr('以下は攻撃後ログに関する調査依頼です。'):tr('現在は正常ログです。以下の調査依頼は攻撃ログを生成した後の状況を説明します。')),...currentCase.briefing.map(p=>node('p','',p)));
+    if(currentCase.entry){$('scenario-state').textContent=tr('導入用ログ');$('scenario-state').classList.remove('attacked');$('scenario-summary').textContent=tr('導入4問は省略できます。既存ケースは一覧からいつでも選べます。');$('baseline-notice').hidden=true;$('briefing-content').replaceChildren(...currentCase.briefing.map(p=>node('p','',p)));$('reset-title').textContent=tr('導入ケースを初期状態に戻しますか？');$('reset-description').textContent=tr('導入ケースの解答・メモ・履歴・作成ファイルを初期化します。他のケースは保持します。');$('reset-confirm').textContent=tr('導入ケースを初期化');}
   }
   function applyAttack() {
     if (cs.attackApplied) return;
@@ -116,14 +125,15 @@
     toast(tr('攻撃ログを反映しました。設問と正常時との差分を調べられます。'));
   }
   function renderNav() {
+    $('learning-guide-content').replaceChildren(...globalThis.LOGROOM_LEARNING_GUIDE.map(text=>node('p','',text)));
     const nav = $('case-nav'); nav.replaceChildren();
-    $('case-select').replaceChildren(...cases.map((c,i)=>{const o=node('option','',`${i+1}. ${c.title}`);o.value=c.id;o.selected=c.id===state.caseId;return o;}));
+    $('case-select').replaceChildren(...cases.map((c,i)=>{const o=node('option','',`${i}. ${c.title}`);o.value=c.id;o.selected=c.id===state.caseId;return o;}));
     cases.forEach((c,i) => {
       const saved = state.cases[c.id] || makeCaseState();
       const n = c.tasks.filter(t => (saved.solved || []).includes(t.id) && isCorrect(t,(saved.answers || {})[t.id] || '')).length;
       const button = node('button','case-option'); button.type = 'button';
       button.setAttribute('aria-current',c.id === state.caseId ? 'true':'false');
-      button.append(node('span','case-index',String(i + 1).padStart(2,'0')));
+      button.append(node('span','case-index',String(i).padStart(2,'0')));
       const shortTitles = {ssh:tr('SSH認証'),web:tr('Web監査'),egress:tr('DNS・メール・プロキシ'),sqli:tr('SQLインジェクション'),cmdinj:tr('コマンドインジェクション'),pathtraversal:tr('パストラバーサル'),webauth:tr('Web認証'),ssrf:'SSRF',upload:tr('アップロード'),tamper:tr('ログ改変')};
       const title = node('span','case-option-text'); title.append(node('span','case-option-title',shortTitles[c.id] || c.shortTitle || c.title),node('span','case-option-sub',tr`${c.level} · ${c.minutes}分`));
       button.append(title,node('span','case-option-progress',`${n}/${c.tasks.length}`));
@@ -133,6 +143,7 @@
   function welcome() {
     const wrap = node('div','terminal-welcome');
     wrap.append(node('strong','', tr('Logroom / ログ分析ターミナル')));
+    if(currentCase.entry){wrap.append(node('p','',currentCase.title),node('p','',currentCase.clockNote),node('p','',tr('導入4問は省略できます。既存ケースは一覧からいつでも選べます。')),node('p','',currentCase.initialCommand));return wrap;}
     wrap.append(document.createTextNode('\n'+currentCase.title+'\n'+tr(cs.attackApplied?'攻撃後ログ':'正常ログ')+'\n'+(currentCase.clockNote||'')+'\n\n'+tr`まず ${currentCase.initialCommand} を入力してください。`+'\n'+tr(state.practice.advanced?'実践モード：正常コピーなし。過去ログ・集計・sudoを使って調べます。SSHは2万行以上です。':cs.attackApplied?'正常ログとの比較は diff -u /baseline/元のパス 元のパス。':'正常なログを調べたら「攻撃ログを生成」を押してください。')+'\n'+tr('help で対応コマンドと実機との違いを確認できます。')+'\n'));
     return wrap;
   }
@@ -218,7 +229,8 @@
     $('debrief-callout').classList.toggle('unlocked',completed);
     $('debrief-status').textContent=tr(completed?tr('全問正解 · ケース完了'):tr('演習後の解説'));
     $('debrief-unlock-note').textContent=tr(completed?tr('攻撃の流れ、原因、影響、検知・対策を振り返れます。'):tr`全${currentCase.tasks.length}問に正解すると、攻撃全体の詳しい解説を読めます。`);
-    renderNav();
+    if(currentCase.entry)$('debrief-unlock-note').textContent=tr(completed?'対象選択・抽出・集計・根拠保存の意味を振り返れます。':'4問を終えると、基本操作の振り返りを読めます。');
+    renderNav();renderExit();renderGraduation();
   }
   function solution(task) {
     const wrap = node('div','solution-box');
@@ -236,6 +248,7 @@
   function renderTasks() {
     const list = $('task-list'); list.replaceChildren();
     currentCase.tasks.forEach((task,i) => {
+      if(task.kind==='file'){renderFileTask(task,i,list);return;}
       const correct = cs.solved.includes(task.id) && isCorrect(task,cs.answers[task.id] || '');
       const card = node('article',`task-card${correct?' correct':''}`);
       const head = node('div','task-header'); head.append(node('span','task-number',correct?'✓':String(i+1)),node('h3','',task.label));
@@ -285,6 +298,78 @@
       list.append(card);
     });
   }
+  function renderPreparation(){
+    $('preparation-content').replaceChildren(...(currentCase.preparation||[]).map(text=>node('p','',text)));
+    $('preparation').open=Boolean(currentCase.entry);
+    const target=$('concept-check'),spec=currentCase.conceptCheck;target.replaceChildren();target.hidden=!spec;if(!spec)return;
+    target.append(node('h4','',tr('基礎の確認（任意・進捗には算入しません）')),node('p','',spec.question));
+    const form=node('form','concept-form'),select=node('select');select.id='concept-answer';select.setAttribute('aria-label',spec.question);
+    const empty=node('option','',tr('選んでください'));empty.value='';select.append(empty);
+    for(const option of spec.options){const item=node('option','',option.label);item.value=option.value;select.append(item);}select.value=cs.concept.answer;
+    const button=node('button','button small',tr('基礎の回答を確認'));button.type='submit';form.append(select,button);
+    const feedback=node('p','feedback');feedback.setAttribute('role','status');
+    const show=()=>{const valid=cs.concept.answer===spec.answer;feedback.className='feedback'+(cs.concept.checked?(valid?' success':' error'):'');feedback.textContent=cs.concept.checked?tr(valid?'基礎を確認できました。':'基礎の説明を読み直してみましょう。')+' '+spec.explanation:'';};
+    select.addEventListener('change',()=>{cs.concept.answer=select.value;cs.concept.checked=false;show();save();});
+    form.addEventListener('submit',event=>{event.preventDefault();cs.concept.checked=true;show();save();});show();target.append(form,feedback);
+  }
+  function renderFileTask(task,index,list){
+    const correct=cs.solved.includes(task.id)&&isCorrect(task,cs.answers[task.id]);
+    const card=node('article','task-card'+(correct?' correct':''));
+    const head=node('div','task-header');head.append(node('span','task-number',correct?'✓':String(index+1)),node('h3','',task.label));
+    card.append(head,node('p','task-prompt',task.prompt));
+    const hints=node('details','hint-box');hints.append(node('summary','',tr('調査の進め方を見る')));
+    for(const hint of task.hints)hints.append(node('p','',hint.text),commandButton(hint.command));
+    const check=node('button','button',tr('提出ファイルを確認'));check.type='button';check.dataset.fileTask=task.id;
+    check.addEventListener('click',()=>{
+      const value=shell.files[task.outputPath]||'';
+      cs.answers[task.id]=value;cs.solved=cs.solved.filter(id=>id!==task.id);
+      const valid=isCorrect(task,value);if(valid)cs.solved.push(task.id);
+      cs.feedback[task.id]=valid?'correct':'incorrect';renderTasks();renderProgress();save();
+    });
+    const fb=node('p','feedback'+(correct?' success':cs.feedback[task.id]==='incorrect'?' error':''));fb.setAttribute('role','status');
+    if(cs.feedback[task.id])fb.textContent=tr(correct?'保存した根拠を確認しました。':'ファイルの内容・行の不足や重複・順序を確認してください。');
+    card.append(hints,check,fb);if(correct)card.append(node('p','',task.explanation));list.append(card);
+  }
+  function renderExit(){
+    const container=$('exit-exercise'),spec=currentCase.exitExercise;container.replaceChildren();container.hidden=!spec;
+    if(!spec)return;
+    const submission=cs.exit,valid=submission.checked&&curriculum.gradeExit(currentCase,submission);
+    container.append(node('h3','',spec.title),node('p','',spec.mission),node('p','muted',tr('入口・出口の追加演習は、従来のケース完了とは別に保存します。')));
+    const ready=cs.attackApplied&&currentCase.tasks.every(task=>cs.solved.includes(task.id)&&isCorrect(task,cs.answers[task.id]));
+    if(!ready){container.append(node('p','exit-locked',tr('このケースの設問を完了すると、調査した根拠を使う出口演習が開きます。')));return;}
+    const form=node('form','exit-form'),fields=node('fieldset');fields.disabled=!cs.attackApplied;
+    const evidence=node('fieldset','exit-evidence');evidence.append(node('legend','',tr('根拠を選ぶ（必要な行だけ）')));
+    const invalidate=()=>{submission.checked=false;feedback.textContent='';feedback.className='feedback';example.hidden=true;renderGraduation();save();};
+    for(const ref of spec.evidence){
+      const label=node('label','evidence-option'),input=node('input');input.type='checkbox';input.value=ref.id;input.checked=submission.evidence.includes(ref.id);
+      input.addEventListener('change',()=>{submission.evidence=submission.evidence.filter(id=>id!==ref.id);if(input.checked)submission.evidence.push(ref.id);invalidate();});
+      const body=node('span','evidence-body');body.append(node('strong','',ref.path+' : '+ref.line),node('code','',ref.quote));label.append(input,body);evidence.append(label);
+    }fields.append(evidence);
+    for(const question of spec.questions){
+      const label=node('label','exit-question'),select=node('select');select.name=question.id;select.setAttribute('aria-label',question.label);
+      const empty=node('option','',tr('選んでください'));empty.value='';select.append(empty);
+      for(const option of question.options){const item=node('option','',option.label);item.value=option.value;select.append(item);}select.value=submission.answers[question.id]||'';
+      select.addEventListener('change',()=>{submission.answers[question.id]=select.value;invalidate();});label.append(node('span','',question.label),select);fields.append(label);
+    }
+    const noteLabel=node('label','exit-note-label',tr('短い引継ぎメモ（自己比較用）'));noteLabel.htmlFor='exit-note';
+    const note=node('textarea');note.id='exit-note';note.rows=4;note.value=submission.note;note.spellcheck=false;
+    note.addEventListener('input',()=>{submission.note=note.value;save();});
+    fields.append(noteLabel,node('p','muted',tr('事実・根拠・未確認事項と次の確認を3行でまとめます。文章の意味は自動採点しません。')),note);
+    const check=node('button','button primary',tr('構造化した回答を確認'));check.type='submit';fields.append(check);form.append(fields);
+    const feedback=node('p','feedback'+(valid?' success':submission.checked?' error':''));feedback.setAttribute('role','status');
+    if(submission.checked)feedback.textContent=tr(valid?'根拠と判断の選択は正解です。文章は下の例と自分で比較してください。':'根拠の組合せと、事実・未確認事項・次の確認を見直してください。');
+    const example=node('div','exit-example');example.hidden=!valid;example.append(node('h4','',tr('引継ぎ例（自分の文章と比較）')),node('p','',spec.model));
+    form.addEventListener('submit',event=>{event.preventDefault();if(!cs.attackApplied)return;submission.checked=true;renderExit();renderGraduation();save();});
+    container.append(form,feedback,example);
+  }
+  function renderGraduation(){
+    const target=$('graduation');target.replaceChildren();target.hidden=!curriculum.graduated(cases,state.cases);
+    if(target.hidden)return;
+    target.append(node('h3','',tr('Logroomの卒業確認を完了しました')),node('p','',tr('既存10ケースと2つの出口演習を完了しました。このまま復習や実践モードを続けられます。')));
+    const link=node('a','button',tr('次のおすすめ：pcaproom-easy（任意）'));link.href='https://retiacole.github.io/pcaproom-easy/';link.target='_blank';link.rel='noopener noreferrer';
+    const stay=node('button','button quiet',tr('このroomで続ける'));stay.type='button';stay.addEventListener('click',()=>{$('command-input').focus();$('command-input').scrollIntoView({block:'center'});});
+    target.append(link,node('p','muted',tr('新しいタブで開きます。進捗は共有されません。')),stay);
+  }
   function renderArtifactTask() {
     const target=$('artifact-task');target.replaceChildren();target.hidden=currentCase.id!=='ssh';
     if(target.hidden)return;
@@ -324,24 +409,25 @@
   function selectCase(id) {
     if(trainActive)return;
     currentCase = cases.find(c=>c.id===id) || cases[0];state.caseId = currentCase.id;
-    cs = hydrateCase(state.cases[currentCase.id]);if(state.practice.advanced)cs.attackApplied=true;state.cases[currentCase.id] = cs;
-    shell = new globalThis.LogLabShell(activeFiles(),{groups:state.practice.advanced?['analyst']:['analyst','adm'],metadata:cs.metadata});
+    cs = hydrateCase(state.cases[currentCase.id]);if(state.practice.advanced||currentCase.entry)cs.attackApplied=true;state.cases[currentCase.id] = cs;
+    shell = new globalThis.LogLabShell(activeFiles(),{groups:state.practice.advanced&&!currentCase.entry?['analyst']:['analyst','adm'],metadata:cs.metadata});
     Object.entries(cs.edits).forEach(([path,text])=> {if (!path.startsWith('/')) return;if (text === null) delete shell.files[path];else if (typeof text === 'string') shell.files[path] = text;});
     if (shell.directories instanceof Set) cs.directories.filter(x=>typeof x==='string' && x.startsWith('/')).forEach(x=>shell.directories.add(x));
     if (cs.cwd && (shell.directories instanceof Set && shell.directories.has(cs.cwd))) shell.cwd = cs.cwd;
     historyIndex = cs.history.length;draft = '';
-    $('case-meta').textContent = tr(tr`CASE ${String(cases.indexOf(currentCase)+1).padStart(2,'0')} / ${currentCase.level} / 目安 ${currentCase.minutes}分`);
+    $('case-meta').textContent = tr(tr`CASE ${String(cases.indexOf(currentCase)).padStart(2,'0')} / ${currentCase.level} / 目安 ${currentCase.minutes}分`);
     $('case-title').textContent = tr(currentCase.title);$('case-summary').textContent = tr(currentCase.summary);
     $('initial-command').textContent = tr(currentCase.initialCommand);
     $('initial-command').onclick = () => insertCommand(currentCase.initialCommand);
     $('notes').value = cs.notes;$('command-input').value='';$('last-exit').textContent=tr(tr('準備完了'));$('last-exit').className='';
     $('walkthrough-list').replaceChildren(...currentCase.walkthrough.map((w,i)=> {const step = node('div','walk-step');step.append(node('h4','',`${i+1}. ${w.title}`),commandButton(w.command),node('p','',w.explanation));return step;}));
-    renderMode();renderNav();renderTerminal();renderTasks();renderArtifactTask();renderProgress();renderReference();applyLayout();save();
+    renderPreparation();renderMode();renderNav();renderTerminal();renderTasks();renderArtifactTask();renderProgress();renderReference();applyLayout();save();
   }
   function setTab(name) {
     activeTab = name;
     ['tasks','commands','notes'].forEach(n=> {const selected=n===name;$(`tab-${n}`).setAttribute('aria-selected',String(selected));$(`tab-${n}`).tabIndex=selected?0:-1;$(`panel-${n}`).hidden=!selected;});
   }
+  $('entry-skip').addEventListener('click',()=>selectCase('ssh'));
   $('terminal-form').addEventListener('submit',e=> {e.preventDefault();runCommand($('command-input').value);});
   $('command-input').addEventListener('keydown',e=> {
     const input=e.target;
@@ -444,7 +530,8 @@
   $('doom-dialog').addEventListener('cancel',e=>{e.preventDefault();finishRootGameOver();});
   $('export-report').addEventListener('click',()=> {
     const progress=currentCase.tasks.map((t,i)=>tr`${i+1}. ${t.label}\n解答：${cs.answers[t.id] || tr('未入力')}\n判定：${cs.solved.includes(t.id)?tr('正解'):tr('未正解')}`).join('\n\n');
-    const text=(currentCase.clockNote||'')+'\n'+tr`Logroom 調査メモ\n${currentCase.title}\n状態：${cs.attackApplied?tr('攻撃後ログ'):tr('正常ログ')}\nデータは架空 / 時刻の前提は冒頭参照\n書き出し：${new Date().toLocaleString(state.locale)}\n\n調査メモ\n${cs.notes || tr('（メモはまだありません）')}\n\n設問への解答\n${progress}\n\nコマンド履歴\n${cs.history.join('\n')}\n`;
+    const exitReport=currentCase.exitExercise?'\n'+currentCase.exitExercise.title+'\n'+cs.exit.evidence.map(id=>{const e=currentCase.exitExercise.evidence.find(x=>x.id===id);return e?e.path+':'+e.line+' '+e.quote:'';}).join('\n')+'\n'+currentCase.exitExercise.questions.map(q=>q.label+': '+(q.options.find(o=>o.value===cs.exit.answers[q.id])?.label||tr('未入力'))).join('\n')+'\n'+tr('短い引継ぎメモ（自己比較用）')+'\n'+cs.exit.note+'\n':'';
+    const text=exitReport+(currentCase.clockNote||'')+'\n'+tr`Logroom 調査メモ\n${currentCase.title}\n状態：${cs.attackApplied?tr('攻撃後ログ'):tr('正常ログ')}\nデータは架空 / 時刻の前提は冒頭参照\n書き出し：${new Date().toLocaleString(state.locale)}\n\n調査メモ\n${cs.notes || tr('（メモはまだありません）')}\n\n設問への解答\n${progress}\n\nコマンド履歴\n${cs.history.join('\n')}\n`;
     const blob=new Blob([text],{type:'text/plain;charset=utf-8'}), url=URL.createObjectURL(blob), a=node('a');
     a.href=url;a.download=`logroom-${currentCase.id}-notes.txt`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast(tr('調査メモを書き出しました。'));
   });
@@ -629,6 +716,7 @@
     const c=currentCase.context||{},target=$('context-content');target.replaceChildren();
     target.append(node('p','context-case-name',currentCase.title),node('p','muted',tr('ここに示すのは合成ログのための演習設定です。実際のOSやサーバーは起動していません。')));
     const section=(title,body)=>{const s=node('section','context-section');s.append(node('h3','',title));if(Array.isArray(body)){const ul=node('ul');body.forEach(t=>ul.append(node('li','',t)));s.append(ul);}else s.append(node('p','',body||tr('この項目は調査対象外です。')));target.append(s);return s;};
+    if(currentCase.preparation?.length)section(tr('演習前に読める基礎'),currentCase.preparation);
     section(tr('与えられた状況'),c.situation||currentCase.summary);section(tr('調査の目的'),c.objective||tr('ログの根拠を使って、起きた操作と結果を整理します。'));
     const hosts=section(tr('サーバー・端末の構成'),'');hosts.lastElementChild.remove();
     const table=node('table','context-table'),head=node('tr');[tr('ホスト'),tr('役割'),tr('アドレス'),tr('サービス')].forEach(t=>head.append(node('th','',t)));table.append(head);
@@ -647,7 +735,7 @@
     target.append(node('p','context-case-name',d.title||currentCase.title),node('p','debrief-summary',d.summary||currentCase.summary));
     const section=(title,value)=>{const s=node('section','context-section');s.append(node('h3','',title));if(Array.isArray(value)){const ul=node('ul');value.forEach(v=>ul.append(node('li','',v)));s.append(ul);}else s.append(node('p','',value||tr('提供されたログの根拠に基づいて判断します。')));target.append(s);};
     const sourceLink=(title,url)=>{const a=node('a','reference-link',title);try{const parsed=new URL(url);if(parsed.protocol!=='https:')return node('span','',title);a.href=parsed.href;a.target='_blank';a.rel='noopener noreferrer';}catch(_){return node('span','',title);}return a;};
-    if(d.knowledge?.length){const s=node('section','context-section knowledge-section');s.append(node('h3','',tr('問題を解くための技術知識')));d.knowledge.forEach(k=>{const part=node('div','knowledge-item');part.append(node('h4','',k.title),node('p','',k.detail));s.append(part);});target.append(s);}
+    if(d.knowledge?.length){const s=node('section','context-section knowledge-section');s.append(node('h3','',tr('事例に照らした補足知識')));d.knowledge.forEach(k=>{const part=node('div','knowledge-item');part.append(node('h4','',k.title),node('p','',k.detail));s.append(part);});target.append(s);}
     const stages=node('section','context-section');stages.append(node('h3','',tr('攻撃と観測の流れ')));const ol=node('ol','debrief-stages');(d.stages||[]).forEach(stage=>{const li=node('li');li.append(node('strong','',stage.title),node('p','',stage.detail));ol.append(li);});stages.append(ol);target.append(stages);
     section(tr('原因・成立した条件'),d.cause);section(tr('ログで確認できた影響'),d.impact);section(tr('このログだけでは分からないこと'),d.limits||[]);section(tr('対策と追加確認'),d.remediation||[]);section(tr('今回の分析で身に付けるポイント'),d.lessons||[]);
     if(d.history?.length){const s=node('section','context-section history-section');s.append(node('h3','',tr('関連する実際の事案・脆弱性')));d.history.forEach(h=>{const item=node('article','history-item');item.append(node('h4','',`${h.title}${h.year?'（'+h.year+'）':''}`),node('p','',h.detail));if(h.relation)item.append(node('p','history-relation',tr('演習との関係：')+h.relation));item.append(sourceLink(h.sourceTitle||tr('一次資料を開く'),h.url));s.append(item);});target.append(s);}

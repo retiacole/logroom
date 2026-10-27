@@ -2,11 +2,14 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..');
 const {render}=require('../scripts/build.js');
-for(const name of ['shell.js','cases.js','cases-extra.js','case-context.js','case-reading-a.js','case-reading-b.js'])require('../src/'+name);
+for(const name of ['shell.js','cases.js','cases-extra.js','case-context.js','case-reading-a.js','case-reading-b.js','locales/ui.js','locales/cases-a.js','locales/cases-b.js','locales/cases-c.js','curriculum.js'])require('../src/'+name);
 const cases=globalThis.LOG_LAB_CASES,commands=globalThis.LogLabShell.supportedCommands;
-assert.equal(cases.length,10);assert.equal(cases.reduce((n,c)=>n+c.tasks.length,0),104);assert.equal(commands.length,61);
+assert.equal(cases.length,11);assert.equal(cases.reduce((n,c)=>n+c.tasks.length,0),108);assert.equal(commands.length,61);
 let references=0;
 for(const c of cases){
+  assert.ok(c.preparation.length>=2,c.id);
+  if(c.entry)continue;
+  assert.ok(c.conceptCheck&&c.conceptCheck.options.some(o=>o.value===c.conceptCheck.answer),c.id+' optional concept check');
   assert.ok(c.baselineFiles&&c.attack&&c.context&&c.debrief,c.id);
   assert.ok(c.debrief.knowledge.length>=3&&c.debrief.history.length>=1&&c.debrief.references.length>=2,c.id);
   for(const r of [...c.debrief.history,...c.debrief.references])assert.equal(new URL(r.url).protocol,'https:');
@@ -15,6 +18,9 @@ for(const c of cases){
 }
 assert.equal(references,34);
 const built=render(),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const version=require('../package.json').version;
+assert.ok(html.includes('class="version header-version">v'+version+'</span>'));
+assert.ok(!html.includes('{{APP_VERSION}}'));
 assert.ok(html===built,'index.html is stale: run npm run build');
 for(const target of ['dist/index.html','dist/logroom.html'])assert.ok(fs.readFileSync(path.join(root,target),'utf8')===built,target+' is stale: run npm run build');
 assert.ok(Buffer.byteLength(html)<2000000,'three offline language packs should remain below 2 MB');
@@ -41,4 +47,4 @@ for(const filename of published){
     assert.ok(fs.existsSync(path.resolve(path.dirname(filename),target)),'broken local link '+relative+': '+link);
   }
 }
-console.log(`Release checks passed: ${cases.length} cases, 104 questions, ${commands.length} commands, ${references} references; deterministic offline HTML; documentation links and publication scan clean.`);
+console.log(`Release checks passed: ${cases.length} cases, 108 questions, ${commands.length} commands, ${references} references; deterministic offline HTML; documentation links and publication scan clean.`);

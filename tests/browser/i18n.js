@@ -74,7 +74,7 @@ async function checkLinks(page, item) {
     await page.goto(url);
     assert.equal(await page.locator('#language-select').inputValue(), 'ja');
     assert.equal(await page.evaluate(() => LogroomI18n.locale), 'ja');
-    const original = await page.evaluate(() => LOG_LAB_CASES);
+    const original = await page.evaluate(() => LOG_LAB_CASES.filter(c=>!c.entry));
     assert.equal(original.length, 10);
     assert.equal(original.reduce((n, c) => n + c.tasks.length, 0), 104);
 
@@ -113,7 +113,7 @@ async function checkLinks(page, item) {
       assert.deepEqual(result.fail, [], `${result.lang}/${result.id}: untranslated prose`);
       for (const test of ['logs', 'tasks', 'refs', 'readmes', 'walkthrough']) assert.equal(result[test], true, `${result.lang}/${result.id}: ${test}`);
     }
-    assert.deepEqual(await page.evaluate(() => LOG_LAB_CASES), original, 'localizeCases does not mutate canonical Japanese data');
+    assert.deepEqual(await page.evaluate(() => LOG_LAB_CASES.filter(c=>!c.entry)), original, 'localizeCases does not mutate canonical Japanese data');
 
     // Prepare another case so resets can prove isolation later.
     await choose(page, 'web');
@@ -271,6 +271,7 @@ async function checkLinks(page, item) {
     const deniedPage = await deniedContext.newPage(); observe(deniedPage);
     await deniedPage.addInitScript(() => Object.defineProperty(window, 'localStorage', {get() {throw new DOMException('Storage denied for test', 'SecurityError');}}));
     await deniedPage.goto(url);
+    await deniedPage.locator('#entry-skip').click();
     await deniedPage.locator('#apply-attack').click();
     await submit(deniedPage, 0, original[0].tasks[0].answer);
     await deniedPage.locator('#command-input').fill('echo temporary');

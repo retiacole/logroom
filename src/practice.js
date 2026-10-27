@@ -10,25 +10,31 @@
   function variantCases(cases, {seed = '', advanced = false} = {}) {
     // Map the addresses used by this dataset to distinct three-digit octets.
     // Equal-width octets also keep common literal-IP grep exercises unambiguous.
-    const ips = new Map(), pattern = /\b(192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)(\d{1,3})\b/g;
+    const ips = new Map(), entryIps = new Map(), pattern = /\b(192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)(\d{1,3})\b/g;
     if (seed) {
-      const source = JSON.stringify(cases) + ' 192.0.2.200';
+      // Preserve saved v0.2 seed assignments when optional entry data is added.
+      // New-only addresses consume unused slots after the original case corpus.
+      const source = JSON.stringify(cases.filter(c=>!c.entry)) + ' 192.0.2.200';
+      const additionalSource = JSON.stringify(cases.filter(c=>c.entry));
       for (const prefix of ['192.0.2.', '198.51.100.', '203.0.113.']) {
-        const used = [...new Set([...source.matchAll(pattern)].filter(m => m[1] === prefix && +m[2] > 0 && +m[2] < 255).map(m => +m[2]))].sort((a, b) => a - b);
+        const suffixes=text=>[...new Set([...text.matchAll(pattern)].filter(m=>m[1]===prefix&&+m[2]>0&&+m[2]<255).map(m=>+m[2]))].sort((a,b)=>a-b);
+        const original = suffixes(source);
+        const used = [...original,...suffixes(additionalSource).filter(suffix=>!original.includes(suffix))];
         const pool = Array.from({length:155}, (_, i) => i + 100);
         let random = seedOffset(seed + ':' + prefix);
         for (let i = pool.length - 1; i > 0; i--) {random = (Math.imul(random,1664525) + 1013904223) >>> 0; const j = random % (i + 1); [pool[i],pool[j]] = [pool[j],pool[i]];}
         if (used.length > pool.length) throw new Error('Too many addresses for this practice variant');
-        used.forEach((suffix, i) => ips.set(prefix + suffix, prefix + pool[i]));
+        original.forEach((suffix, i) => ips.set(prefix + suffix, prefix + pool[i]));
+        used.forEach((suffix, i) => entryIps.set(prefix + suffix, prefix + pool[i]));
       }
     }
-    function copy(value, key) {
-      if (typeof value === 'string') return seed && key !== 'url' ? value.replace(pattern, match => ips.get(match) || match) : value;
-      if (Array.isArray(value)) return value.map(item => copy(item, key));
-      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, copy(item, name)]));
+    function copy(value, key, addresses=ips) {
+      if (typeof value === 'string') return seed && key !== 'url' ? value.replace(pattern, match => addresses.get(match) || match) : value;
+      if (Array.isArray(value)) return value.map(item => copy(item, key,addresses));
+      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([name, item]) => [name, copy(item, name,addresses)]));
       return value;
     }
-    const result = copy(cases);
+    const result = cases.map(c=>copy(c,undefined,c.entry?entryIps:ips));
     if (advanced) {
       const ssh = result.find(c => c.id === 'ssh');
       if (ssh) {
