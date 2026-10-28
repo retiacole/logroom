@@ -19,6 +19,7 @@ const tests = [
   'extra-coherence-test.js',
   'i18n-test.js',
   'language-defaults-test.js',
+  'browser-runner-test.js',
   'curriculum-test.js',
   'curriculum-review-test.js',
   'release-check.js'
