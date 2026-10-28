@@ -17,7 +17,7 @@ async function checkExit(page,spec){
 }
 (async()=>{
   const browser=await chromium.launch(launchOptions);
-  const context=await browser.newContext({viewport:{width:1440,height:1000}});
+  const context=await browser.newContext({locale:'ja-JP',viewport:{width:1440,height:1000}});
   const page=await context.newPage(),errors=[],requests=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))requests.push(r.url());});
   try{

@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const {pathToFileURL}=require('node:url');
 const {gunzipSync}=require('node:zlib');
 (async()=>{
-  const browser=await chromium.launch(launchOptions),page=await browser.newPage({viewport:{width:1440,height:1050}}),errors=[],network=[];
+  const browser=await chromium.launch(launchOptions),page=await browser.newPage({locale:'ja-JP',viewport:{width:1440,height:1050}}),errors=[],network=[];
   page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>{if(/^https?:/.test(request.url()))network.push(request.url());});
   const flush=()=>page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));
   const state=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('logroom.offline.v1')));

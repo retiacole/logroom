@@ -2,7 +2,17 @@
 (function(root){
   'use strict';
   const languages=['ja','en','th'];
-  let locale='ja';
+  function browserLocale(){
+    let preferred='';
+    try{
+      const values=root.navigator?.languages;
+      if(Array.isArray(values))preferred=values.find(value=>typeof value==='string'&&value.trim())||'';
+    }catch(_){/* Browser language access is optional. */}
+    if(!preferred)try{preferred=root.navigator?.language||'';}catch(_){/* Use English if unavailable. */}
+    const primary=typeof preferred==='string'?preferred.trim().toLowerCase().split('-')[0]:'';
+    return primary==='ja'?'ja':primary==='th'?'th':'en';
+  }
+  let locale=browserLocale();
   const staticNodes=[],staticAttributes=[];
   let originalTitle='';
   function t(input,...values){
@@ -18,7 +28,7 @@
     // Callback replacement never interprets $&, backslashes, or braces in user data.
     return tagged?translated.replace(/\{(\d+)\}/g,(match,n)=>+n<values.length?String(values[+n]):match):translated;
   }
-  function setLocale(value){locale=languages.includes(value)?value:'ja';return locale;}
+  function setLocale(value){locale=languages.includes(value)?value:browserLocale();return locale;}
   function captureStatic(document){
     originalTitle=document.title;
     const walker=document.createTreeWalker(document.body,4);

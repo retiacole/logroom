@@ -48,6 +48,8 @@ The exercises work offline. If organizational settings block local HTML files, t
 - Detailed debriefs after every question in a case is correct: technical knowledge, observed attack stages, mitigations, related historical incidents, and primary-source links.
 - Resizable terminal, a collapsible exercise panel, notes, and note export.
 
+On the first visit, the browser’s preferred language selects Japanese for Japanese, Thai for Thai, and English for all other languages. A saved language choice takes priority, and you can change it with the selector.
+
 The language selector translates the interface, all questions, hints, context descriptions, and debriefs. Command names and syntax, log evidence, and expected answers stay the same. Your own notes and files are not translated. External source documents remain in their original languages.
 
 ## Simulator scope and progress
