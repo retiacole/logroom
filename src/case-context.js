@@ -41,13 +41,13 @@
         { name: 'log-hub-01', role: '異なるサービスの記録をまとめて調べる演習上の収集ホスト', address: serverAddress, services: ['収集済みログの参照'] },
         { name: 'proxy-01', role: '端末のHTTP通信を仲介するプロキシのログ上のホスト', address: serverAddress, services: ['HTTPプロキシ監査'] },
         { name: 'dns-01', role: '名前解決の問い合わせと回答を記録するホスト', address: serverAddress, services: ['DNS（教材独自のnormalized_dns形式）'] },
-        { name: 'mail-01', role: 'SMTP認証、キュー受付、配送を記録するメールホスト', address: serverAddress, services: ['SMTP submission', 'Postfix形式のキュー・配送記録'] }
+        { name: 'mail-01', role: 'SMTP認証、キュー受付、配送を記録するメールホスト', address: '192.0.2.24', services: ['SMTP submission', 'Postfix形式のキュー・配送記録'] }
       ],
-      network: '同じ社内端末が、DNSへ名前を問い合わせ、プロキシ経由でHTTP通信し、メールサーバーへ送信する設定です。3つの経路は同一の接続ではないため、送信元IPと時刻、宛先の関係を確かめて結び付けます。ログ収集ホスト名と各サービスのホスト名も区別します。',
+      network: '社内端末はWeb通信の宛先をDNSで引き、プロキシ経由でHTTP通信し、メールはSMTP submissionでmail-01へ渡します。外部メールの配送先はmail-01（192.0.2.24）がMX、続いて配送ホストのAレコードを引いて解決します。端末とメールサーバーの問い合わせを分け、送信元IP・時刻・宛先名・キューIDで関連付けます。',
       normalBehavior: [
         '更新確認や文書閲覧に伴うGET、DNSのAレコード問い合わせが繰り返し記録されます。',
         '社内宛てのメトリクスPOSTや、正規アカウントによる社内宛てメールも比較対象です。',
-        'メールでは受付、送信元・サイズの登録、配送、キュー削除が別々の行として記録されます。'
+        'メールでは受付、cleanupによるmessage-id記録、qmgrによる送信元・サイズの登録、配送、キュー削除が別々の行として記録されます。'
       ],
       assumptions: [
         'この演習では送信元IPを端末の照合に使います。共有NATやアドレスの再割り当て等の追加情報は提供されていません。',
@@ -59,9 +59,9 @@
       situation: '商品検索サービスという設定で、検索応答のエラーや大きさが普段と異なる可能性が報告されました。通常の検索語や記号を含む正当な検索と比較して、入力からデータ参照までの流れを確認します。',
       objective: 'HTTP要求、アプリの検索結果、DBの監査記録を関連付ける練習です。入力の見た目、クエリ構造、参照行数、返却行数を別々に確認し、何が根拠になるか判断します。',
       hosts: [{ name: 'catalog-01', role: '商品検索のアプリ・DB監査に記録される論理的なホスト', address: serverAddress, services: ['Nginx形式のHTTPアクセス記録', '商品検索アプリ', '正規化されたDB検索監査'] }],
-      network: '操作端末 → Web受付 → 検索アプリ → データベース、という処理のつながりです。request_idで要求を、query_idで検索を照合します。DBの製品や別ホスト配置の有無は指定されていません。',
+      network: '操作端末 → Web受付 → 検索アプリ → データベース、という処理のつながりです。通常の/api/searchはprepared方式、旧式の/api/search-legacyはinterpolated方式を使います。request_idで要求を、query_idで検索を照合し、どの入口で処理されたかも確認します。DBの製品や別ホスト配置の有無は指定されていません。',
       normalBehavior: [
-        '通常の検索はパラメータを分けて渡す方式として記録され、入力に応じた少数の検索結果が返ります。',
+        '通常の/api/searchはパラメータを分けて渡すprepared方式として記録され、入力に応じた少数の検索結果が返ります。',
         '人名等に使われるアポストロフィを含む正当な入力もあります。記号があるだけで異常と判定しないようにします。',
         '静的ファイルやヘルスチェックのHTTP要求は、DB検索の件数とは別に扱います。'
       ],
@@ -187,7 +187,7 @@
       title: '探索・認証・データ出力を別々に確かめる',
       summary: '203.0.113.88からの探索的な要求の後、report-adminの認証成功とusersの出力成功が確認できます。一方で拒否された要求もあり、同じ送信元の全活動が成功したわけではありません。',
       stages: [
-        { title: 'URLの探索を観測する', detail: '対象送信元には19件のHTTP要求があり、そのうち404は7件です。設定・バックアップ・管理系のパスを探す動きは確認できますが、URLの要求やHTTP 200だけでは中身を取得した証拠になりません。' },
+        { title: 'URLの探索を観測する', detail: '対象送信元には19件のHTTP要求があり、そのうち404は5件です。設定・バックアップ・管理系のパスを探す動きは確認できますが、URLの要求やHTTP 200だけでは中身を取得した証拠になりません。' },
         { title: '認証をアプリ監査で確定する', detail: '10:09:21 UTC、report-adminのaction=loginとresult=successが記録されています。先行する認証失敗や未認証時のデータ出力拒否と、時刻・送信元・アカウントをそろえて区別します。' },
         { title: '同じ要求の出力結果を照合する', detail: '167秒後の10:12:08、req-2048がアクセスログの/admin/export/users.csvと、アプリのdata_export成功を結びます。監査のrows=320は行数、HTTP側の128460は応答バイト数です。' },
         { title: '成功の範囲を絞る', detail: '同じ認証後でもpaymentsはinsufficient_permissionで拒否されています。usersの出力成功を、全データやすべての管理機能へのアクセス成功へ広げてはいけません。' }
@@ -202,7 +202,7 @@
       title: '外向き通信の相関と、流出の断定を分ける',
       summary: '192.0.2.34のDNS、HTTP、SMTPの記録に関連する宛先が現れます。外部への送信は観測できますが、送った内容や業務上の正当性がないため、情報漏えいを確定するには追加調査が必要です。',
       stages: [
-        { title: '名前解決を通信の入口として確認する', detail: '最初の関連記録は11:15:02 UTCのDNS問い合わせです。archive-sync.exampleの回答198.51.100.202と、メール中継用mx.archive-sync.exampleの198.51.100.203を別の宛先として読みます。' },
+        { title: '名前解決を通信の入口として確認する', detail: '最初の関連記録は11:15:02 UTCの端末によるarchive-sync.exampleのA問い合わせで、回答は198.51.100.202です。メール受付後はmail-01（192.0.2.24）がarchive-sync.exampleのMXとmx.archive-sync.exampleのAを引き、配送先198.51.100.203を解決します。端末が引いた名前は1種類で、メールサーバーの問い合わせは別に数えます。' },
         { title: 'SMTP認証から配送まで追う', detail: '同じ端末はsvc-reportsでSMTP認証し、C6D71A20F1に登録されたメールをdrop@archive-sync.exampleへ配送しています。size=846120とdelay=1.2は別の量で、status=sentと250応答は配送先による受付を示します。' },
         { title: 'HTTPの送信量を条件をそろえて集計する', detail: '11:20:05〜11:23:05の対象POSTは4件で、bytes_outは196608・327680・286720・237568で、計1048576バイトです。GET /health、社内メトリクス、応答のbytes_inを混ぜず、送信元・ホスト・メソッド・パスをそろえて数えます。' },
         { title: '相関が示す範囲を明確にする', detail: '送信元、宛先名、時刻の整合から複数経路の活動を関連付けられます。ただし、メールサイズとHTTP送信量が同じ内容を表すか、機密情報を含むか、正当な同期処理かは不明です。' }
@@ -218,7 +218,7 @@
       summary: '入力に記号があるだけでなく、DB監査の構造変化と2400行の参照・返却が同じ要求で一致しています。正常なO\'Brien検索との比較が、単純な文字検知とSQLインジェクションの違いを示します。',
       stages: [
         { title: '構文エラーの試行を切り分ける', detail: '198.51.100.164からのreq-sql-201は、HTTP 500、アプリのdb_syntax、DBのparse_errorが対応し、参照・返却は0行です。不正な試行の手掛かりですが、データ取得成功には数えません。' },
-        { title: '検索条件の意味が変わったことを確認する', detail: 'req-sql-202はmode=interpolatedで、期待したtitle_equalsからtitle_equals_or_trueへ観測構造が変化しています。入力が単なる検索語として扱われず、条件を広げるSQLの構造に影響したことが教材監査で示されます。' },
+        { title: '検索条件の意味が変わったことを確認する', detail: '旧式の/api/search-legacyへのreq-sql-202はmode=interpolatedで、期待したtitle_equalsからtitle_equals_or_trueへ観測構造が変化しています。入力が単なる検索語として扱われず、条件を広げるSQLの構造に影響したことが教材監査で示されます。' },
         { title: 'DBとアプリの結果を一致させる', detail: '同じ要求でrows_readとrows_returnedが2400、アプリの返却行数も2400です。通常の目安10件を超えますが、これは強制LIMITを破ったという意味ではなく、期待した検索範囲との差です。' },
         { title: '記号を含む正常入力で誤検知を避ける', detail: 'O\'Brienを含む正常な検索はprepared方式で処理され、構造変化はfalseです。正常検索25件と比較すると、記号の存在より、SQL構造・実行方式・結果の組み合わせが判断根拠になると分かります。' }
       ],
@@ -234,7 +234,7 @@
       stages: [
         { title: '入力と拒否結果を照合する', detail: '203.0.113.166の記号を含む要求のうち、req-diag-401はHTTP 200でもinvalid_targetで拒否され、child_started=falseです。HTTPが成功形式の応答を返しても、入力を実行したことにはなりません。' },
         { title: '旧式処理の親子関係を追う', detail: 'req-diag-402ではpid=8840の/bin/shからpingと/usr/bin/idが起動しています。同じ要求IDとppid=8840の一致により、診断対象の文字列がシェルの区切りとして解釈された流れを確認できます。' },
-        { title: '実行と終了を別の行で確認する', detail: 'idはpid=8843でexecされ、status=0で終了し、出力にもdiag-webのuidが記録されています。権限はdiag-webで、root取得の記録ではありません。3件のexecに2件のexitを加えて実行回数にしないようにします。' },
+        { title: '実行と終了を別の行で確認する', detail: 'idはpid=8843でexecされ、status=0で終了し、出力にもdiag-webのuidが記録されています。権限はdiag-webで、root取得の記録ではありません。3件のexecには同じpidのexitがそれぞれ対応します。起動と終了を足して6回の実行と数えないようにします。' },
         { title: '正常動作との違いを整理する', detail: '正常な25要求には起動用プロセスとpingの計50件のexecがあり、対象要求には余分な実行が加わっています。応答サイズの差や親の1秒という時間は補助的な観測で、単独で実行成否を証明しません。' }
       ],
       cause: 'プロセス監査には、未信頼の診断入力を含む文字列がsh -cへ渡された形が記録されています。シェルを介した文字列組み立てがデータとコマンド構文を混ぜたと考えられ、具体的な呼び出し元コードは別途確認する必要があります。',
@@ -248,7 +248,7 @@
       summary: '同じ送信元の3要求のうち、検証付き処理の拒否、旧式処理での読取成功、不存在ファイルの失敗を分けて確認できます。パスの見た目とHTTPだけでなく、OS側の参照先と結果が根拠です。',
       stages: [
         { title: '許可領域と入力の解決先を比較する', detail: '198.51.100.141が相対的な移動を含む3要求を送り、許可ルートは/srv/downloadsと記録されています。利用者の入力そのものではなく、アプリが解決した絶対パスがどの領域にあるかを確認します。' },
-        { title: '拒否された試行を区別する', detail: 'req-path-301は検証付きハンドラーがoutside_rootで拒否し、ファイル監査もdeniedです。領域外を要求したことは分かりますが、この要求でファイルを読めたとは判断しません。' },
+        { title: '拒否された試行を区別する', detail: 'req-path-301は検証付きハンドラーがoutside_rootで拒否し、対応するOSのreadは記録されていません。アプリの検証段階で処理が止まっており、OSが読み取りを試みて拒否した事象とは区別します。' },
         { title: '読取成功を別の監査で確認する', detail: 'req-path-302は旧式処理で/etc/app/service.confに解決され、アプリとOS監査がともに384バイトの読み取り成功を記録しています。OSの主体download-webとHTTP送信元を別々に読み、同じ要求IDで結びます。' },
         { title: 'エラーの意味と成功数を整理する', detail: 'req-path-303は/var/log/missing.logの参照がENOENTで終わり、読取バイト数は0です。拒否と不存在を読取成功に混ぜず、対象3要求の成功readは1件と整理します。' }
       ],
@@ -308,7 +308,7 @@
       summary: 'ローカルのアクセスログが切り詰められた記録を、SSH・sudo・ファイル監査・別収集ログで照合できます。現存ログにない要求を「存在しなかった」と扱わないための調査です。',
       stages: [
         { title: '認証した主体と特権操作を追う', detail: 'maintは192.0.2.77から18:04:00 UTCに公開鍵認証し、18:06:00にsudoで対象ログを開くeditorを実行しています。rootは操作の実効権限であり、元のログイン主体maintとは別に読みます。' },
-        { title: '実際のファイル操作と親子関係を照合する', detail: '18:06:02のaudit_serial=4801はfile_truncate成功を記録し、old_size=2593からnew_size=0へ変わっています。pid=9024、ppid=9020、actor=maint、euid=0がsudoのプロセス記録と結び付き、認証からは122秒です。' },
+        { title: '実際のファイル操作と親子関係を照合する', detail: '18:06:02のaudit_serial=4801はfile_truncate成功を記録し、old_size=2456からnew_size=0へ変わっています。pid=9024、ppid=9020、actor=maint、euid=0がsudoのプロセス記録と結び付き、認証からは122秒です。' },
         { title: '後から残った行を全期間と誤認しない', detail: 'ローカルのaccess.logには、その後に追記された2要求だけが残ります。提供されたローカル通常スナップショットの20行は残っていませんが、別収集ログは通常60件と後の2件を保持しています。' },
         { title: '保全範囲と意図の推測を分ける', detail: 'ローカルと別収集の基準スナップショットは保持する件数が異なるため、62と2の差をそのまま削除件数にしません。切り詰めの事実と主体は照合できても、それが承認された保守か隠蔽目的かは追加の業務・権限資料が必要です。' }
       ],
@@ -346,8 +346,8 @@
       for (const match of String(text).matchAll(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g)) timestamps.push(match[0]);
       const months = { Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06', Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12' };
       for (const m of String(text).matchAll(/\[(\d{2})\/(\w{3})\/(\d{4}):(\d{2}:\d{2}:\d{2}) ([+-]\d{4})\]/g)) if (months[m[2]]) timestamps.push(new Date(`${m[3]}-${months[m[2]]}-${m[1]}T${m[4]}${m[5].slice(0, 3)}:${m[5].slice(3)}`).toISOString());
-      // The SSH fixture's collection notes supply 2026 and UTC omitted by traditional syslog.
-      if (item.id === 'ssh') for (const m of String(text).matchAll(/^(\w{3}) +([0-9]{1,2}) (\d{2}:\d{2}:\d{2}) /gm)) if (months[m[1]]) timestamps.push(`2026-${months[m[1]]}-${m[2].padStart(2, '0')}T${m[3]}Z`);
+      // SSH collection notes supply 2026 and UTC omitted by traditional syslog in both cases.
+      if (item.id === 'ssh' || item.id === 'tamper') for (const m of String(text).matchAll(/^(\w{3}) +([0-9]{1,2}) (\d{2}:\d{2}:\d{2}) /gm)) if (months[m[1]]) timestamps.push(`2026-${months[m[1]]}-${m[2].padStart(2, '0')}T${m[3]}Z`);
     }
     timestamps.sort();
     if (!timestamps.length) return '提供資料に記載された期間（UTC）。日本時間は+9時間です。';
@@ -366,7 +366,7 @@
       hosts: definition.hosts,
       network: definition.network,
       normalBehavior: definition.normalBehavior,
-      logSources: sources.map(path => ({ path, description: descriptions[path] || 'このケースで提供された調査資料。記録元と項目の意味はREADMEとログ本文を照合してください。' })),
+      logSources: sources.map(path => ({ path, description: item.id === 'tamper' && path === '/var/log/auth.log' ? 'SSH認証、セッション、sudoの記録。年は2026年、時刻はUTCとして読む従来syslog形式です。接続元・ユーザー・時刻・実行内容を確認します。' : descriptions[path] || 'このケースで提供された調査資料。記録元と項目の意味はREADMEとログ本文を照合してください。' })),
       assumptions: [...commonAssumptions, ...definition.assumptions]
     };
     if (debriefs[item.id]) item.debrief = debriefs[item.id];

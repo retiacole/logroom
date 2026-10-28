@@ -113,6 +113,33 @@ async function checkExit(page,spec){
     await flush(page);
     const saved=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
     assert.equal(saved.cases.egress.notes,'legacy note egress');assert.equal(saved.cases.ssh.solved.length,await page.evaluate(()=>LOG_LAB_CASES.find(c=>c.id==='ssh').tasks.length));
+
+    // A reviewed fixture can change a numeric answer without discarding notes.
+    // Both the screen and exported report must recheck old solved IDs.
+    await page.evaluate(k=>{
+      const saved={version:1,caseId:'web',locale:'ja',cases:{}};
+      const oldAnswers={web:['not-found-count','7'],egress:['dns-names','2'],tamper:['old-size','2593']};
+      for(const [id,[taskId,answer]] of Object.entries(oldAnswers)){
+        const c=LOG_LAB_CASES.find(c=>c.id===id);
+        saved.cases[id]={attackApplied:true,answers:Object.fromEntries(c.tasks.map(t=>[t.id,t.answer])),solved:c.tasks.map(t=>t.id),notes:'Keep review notes: '+id};
+        saved.cases[id].answers[taskId]=answer;
+      }
+      localStorage.setItem(k,JSON.stringify(saved));
+      window.addEventListener('pagehide',()=>localStorage.setItem(k,JSON.stringify(saved)),{once:true});
+    },key);await page.reload();
+    for(const id of ['web','egress','tamper']){
+      await choose(page,id);
+      assert.equal(await page.locator('.task-card.correct').count(),await page.evaluate(id=>LOG_LAB_CASES.find(c=>c.id===id).tasks.length-1,id));
+      assert.equal(await page.locator('#notes').inputValue(),'Keep review notes: '+id);
+      assert.equal(await page.locator('#debrief-open').isDisabled(),true);
+      await page.locator('#tab-notes').click();
+      const downloadPromise=page.waitForEvent('download');
+      await page.locator('#export-report').click();
+      const report=require('node:fs').readFileSync(await (await downloadPromise).path(),'utf8');
+      assert.equal((report.match(/判定：未正解/g)||[]).length,1,'export rechecks revised answer: '+id);
+      assert(report.includes('Keep review notes: '+id));
+      await page.locator('#tab-tasks').click();
+    }
     assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);
     console.log('Curriculum browser checks passed: real saved-file grading; optional concept checks; legacy completion; structured evidence/negative cases; bilingual time correlation; independent reset; three locales; responsive layout; optional graduation; zero network.');
   }finally{await browser.close();}

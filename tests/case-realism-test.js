@@ -36,7 +36,7 @@ assert(!cases.ssh.context.period.includes('2026/08/09'));
 for (const line of rows(cases.web.files[audit])) {
   const rid = line.match(/request_id=(\S+)/)[1];
   const matched = rows(cases.web.files[access]).find(accessLine => accessLine.endsWith('request_id='+rid));
-  if (!matched) continue;
+  assert(matched, 'application request must have an HTTP observation: '+rid);
   const time = matched.match(/\[(\d+)\/Aug\/(\d+):(\d\d:\d\d:\d\d) ([+-]\d\d)(\d\d)\]/);
   assert(time, matched);
   assert.equal(time[4]+time[5], '+0900');

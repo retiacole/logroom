@@ -51,14 +51,14 @@ const golden=[
     "files": {
       "/home/analyst/README.txt": "d4095e9cc0d5890c85bfaefa6fd8972e0b50445ebe9acb7a67a5590200d384e1",
       "/etc/hostname": "236d7d0fd3ed61a56a4d22a4125dbca7ff2bcba23486d8b2867821e6cafdfde1",
-      "/var/log/auth.log": "c1387f111b119092e5119a40743f37ecd156bebf7b04f17893effc29061566f2",
+      "/var/log/auth.log": "d8ec55858aef171f4fe56b1451a5fc785120be63de572c2946aaa23aa2a56362",
       "/var/log/auth.log.1": "fca26c9f009ce4e877a060e39ccda997181787999578fa7dcc14f6cf6b06e6aa",
       "/var/log/auth.log.2.gz": "a73502da136e7fad4fe7d4255ada89a7d8eb62cffb50a685062f05c036fe6cd8"
     },
     "baseline": {
       "/etc/hostname": "236d7d0fd3ed61a56a4d22a4125dbca7ff2bcba23486d8b2867821e6cafdfde1",
       "/home/analyst/README.txt": "fc4495485a5e2cfd9d3af56a21383ed22452ceda86ca5af4ecf0b11484a33f10",
-      "/var/log/auth.log": "39ae751f4730819dc73d714b33288fea21ca43db04af7ca6be43134926f43902",
+      "/var/log/auth.log": "4fa0722c2534e92c6a5c6c232be3c877a5db7a3425ff756c6c4470cf887cdd22",
       "/var/log/auth.log.1": "fca26c9f009ce4e877a060e39ccda997181787999578fa7dcc14f6cf6b06e6aa",
       "/var/log/auth.log.2.gz": "a73502da136e7fad4fe7d4255ada89a7d8eb62cffb50a685062f05c036fe6cd8"
     }
@@ -92,7 +92,7 @@ const golden=[
       },
       {
         "id": "not-found-count",
-        "answer": "7"
+        "answer": "5"
       },
       {
         "id": "denied-resource",
@@ -110,14 +110,14 @@ const golden=[
     "files": {
       "/home/analyst/README.txt": "ae909f8833ca8640f78d92d5cea6efe35e8127987b17a934f8b46a1ee2bd7b5b",
       "/etc/hostname": "b01422841fc4f78ddc9aaa347b6a03b7cdf36d9c543222d4652b0aa61edaae6d",
-      "/var/log/nginx/access.log": "46edf1bc7066b3ac71ccf273d15356aec3d703526fcbbdef08f8d000d0aa863c",
-      "/var/log/app/audit.log": "cc366500963c8f7a9b3b5f7f98441d588df945bdb055146a6cd3351976a0413e"
+      "/var/log/nginx/access.log": "3ccceb1d4759b96dcd2236e77c6c9d410d4792df938c7280a0c5f0cc62306336",
+      "/var/log/app/audit.log": "51c7ea83535b5bf450a947390b3a5fc13fb85c7c53b76238334ab2434d7f672f"
     },
     "baseline": {
       "/etc/hostname": "b01422841fc4f78ddc9aaa347b6a03b7cdf36d9c543222d4652b0aa61edaae6d",
       "/home/analyst/README.txt": "19ee4c441b451e3cba7dee355e1d3a7784656af9838a6451d283c048c5bc69ae",
-      "/var/log/nginx/access.log": "f6ead11586bce1f66cf299f5b8b169df093fff0dcab1fa9a5f23a2220ca96e67",
-      "/var/log/app/audit.log": "9fdd7cbbf2ef239f546b347e91f080e634bc589ff4cfba5424865f9a2f1bf4fe"
+      "/var/log/nginx/access.log": "f8052ae1abe5cbf2771eeadcd35975b131d6f4e06b80c4170b3f2ae4039772b4",
+      "/var/log/app/audit.log": "f30123e671231f266fe753ada44942d173382ea41f7dd75b2817ac095739427b"
     }
   },
   {
@@ -153,7 +153,7 @@ const golden=[
       },
       {
         "id": "dns-names",
-        "answer": "2"
+        "answer": "1"
       },
       {
         "id": "mail-size",
@@ -175,16 +175,16 @@ const golden=[
     "files": {
       "/home/analyst/README.txt": "1ba2543c2a18512b60bd614b4349f0157a37345d855907dd92b6e3650b582739",
       "/etc/hostname": "38f6475f3926a9d8c56ce8567001abf3c2568c7fdad99a73e5c90d08700bf077",
-      "/var/log/proxy/access.log": "5dd705e17cfb4b6b1aa7b54c22d257218e68dafe48478c897db87be8523f5015",
-      "/var/log/named/query.log": "889c920f74885e17ceb17f487e7f43d2ef795eba1579761940a9beac8d6fc84e",
-      "/var/log/mail.log": "368cd44d88cce92b2b947aa962c998483fa1b4ded335103666b2fe5a2c600146"
+      "/var/log/proxy/access.log": "91514fe2e48cdcf46215cdc22720a6b8914fe84c3fe26b747fc80ccf1849bc0e",
+      "/var/log/named/query.log": "c3d9da829abd88160a6c80616eb7dbbe7888b2778cb80375c687d97d099f84dc",
+      "/var/log/mail.log": "54e7b2bc8e42cb6f4edba1d79a4eb856ce23a629374ea800b1d417770cf23f6e"
     },
     "baseline": {
       "/etc/hostname": "38f6475f3926a9d8c56ce8567001abf3c2568c7fdad99a73e5c90d08700bf077",
       "/home/analyst/README.txt": "ab55323b63af2c2ee47af7ccbc5d17788c5f95beadc03f6883e608ac0e5f8937",
-      "/var/log/proxy/access.log": "aac3eb0c00070526ab6e766cdad9abe84bc4772a052e22e3d81e92b96db05ae0",
+      "/var/log/proxy/access.log": "5f693a009638994f2e9d3618db62b9d5145ecbe881436024c263f21b811cb313",
       "/var/log/named/query.log": "6e7888a1589a52fc11f15ab09d2da6cddd671246165bd979e16ec43eadcd7063",
-      "/var/log/mail.log": "048f47363a178f00611ac32b8f5c8724b43e44d88d3cdbeb0947e709c8a454fc"
+      "/var/log/mail.log": "f1f968dd97dcafba87dd531ac65318ef7f272bceb5522cdf68b5181c940d2228"
     }
   },
   {
@@ -234,7 +234,7 @@ const golden=[
     "files": {
       "/home/analyst/README.txt": "0ca08004c9efa41b5af52c8a1a940399c1947b545779d926da4c272bc282a247",
       "/etc/hostname": "b66d63e4f8bd614b455d3ee527436ff18e01a37d520216bc3386168d62704efa",
-      "/var/log/nginx/access.log": "cb065b7db1863b8cfbccb9a15fd57a09c0cc4f691ea05573abaecfea5c02cdbe",
+      "/var/log/nginx/access.log": "e13599a278af724deb26bf25ede04523308734e9f8881e5382077fa3d3da2c30",
       "/var/log/app/audit.log": "ed42c0d033ba2b84ee956422bba1d7962cb1b0fae4678b58b08aa068a86805c1",
       "/var/log/app/audit.jsonl": "bcff6753bcb4b90b9a1e17093f86e5beda6962f8e2fb8432bc7172561f771dc4",
       "/var/log/db/query.log": "58e4020b40f66d6bf2796d69f2062951a4ac657300ca717c2e89ee6f630d2039"
@@ -306,7 +306,7 @@ const golden=[
       "/var/log/nginx/access.log": "7ce982377cf2bc2b81f631c295ba49a8d11044d0e9374a10241e6f304df86d2f",
       "/var/log/app/audit.log": "798d5ee9adf19d28f2065e0aa10ff306051621b3016f7ecaa3e1950f71053997",
       "/var/log/app/audit.jsonl": "31331a048e7268563236e258cd24157b763d5f945989b113f40f4e6a16932c7a",
-      "/var/log/process/exec.log": "1c888898dde755ce268e87def58629ba88e03258666dfffa1bb299df8c8ed27f"
+      "/var/log/process/exec.log": "6d61a6e43355151fa7540f38df961152ae4a488bc4b0ebb319fbfd62672a57fd"
     },
     "baseline": {
       "/etc/hostname": "1b4f264fc6d5496d64d98441c65a2878d656bd1b2a8267d41eca8015a711bc5e",
@@ -314,7 +314,7 @@ const golden=[
       "/var/log/nginx/access.log": "dfb0ffe0c62f04555aa1d0885bd80a87881457ad654fd4f82d5ebfb3ca463b80",
       "/var/log/app/audit.log": "af795da0756cf45e0129c8fcf9aac2754418e11475bad9ea760404be528003d6",
       "/var/log/app/audit.jsonl": "c2ea3b7c1feec5b51b4c33cf323c7843dd40f6ea0ee4ada06e1dd9f189b88669",
-      "/var/log/process/exec.log": "bc7587c32d491da9a9662ee1566636ec31d51f249c2080aa3d7ebc83e3b8b18e"
+      "/var/log/process/exec.log": "657594f8ba643928f5d3195ceb81abaf85db23ce47cdd0aa4e604c8831d71c48"
     }
   }
 ];
@@ -331,7 +331,7 @@ test('104 total tasks',()=>assert.equal(cases.reduce((n,c)=>n+c.tasks.length,0),
 test('exact 5 additional cases',()=>assert.equal(extras.length,5));
 for(const old of golden){
  const c=cases.find(c=>c.id===old.id);
- test(c.id+' old task order IDs and answers preserved',()=>assert.deepEqual(c.tasks.map(t=>({id:t.id,answer:t.answer})),old.tasks));
+ test(c.id+' reviewed task order IDs and answers',()=>assert.deepEqual(c.tasks.map(t=>({id:t.id,answer:t.answer})),old.tasks));
  for(const [p,digest]of Object.entries(old.files))test(c.id+' reviewed fixture '+p,()=>assert.equal(hash(c.files[p]),digest));
  for(const [p,digest]of Object.entries(old.baseline))test(c.id+' reviewed normal fixture '+p,()=>assert.equal(hash(c.baselineFiles[p]),digest));
 }
@@ -358,7 +358,7 @@ const nginx=s=>lines(s).map(line=>{const m=line.match(/^(\S+) - - \[([^\]]+)\] "
 const timeOnly=s=>new Date(s).toISOString().slice(11,19);
 const answers={};
 {
- const c=extras.find(c=>c.id==='pathtraversal'),app=events(c).filter(e=>e.action==='file_read'),access=nginx(c.files[A]),os=lines(c.files['/var/log/audit/file.log']).map(kv);
+ const c=extras.find(c=>c.id==='pathtraversal'),app=events(c).filter(e=>e.action==='file_read'&&!e.resolved_path.startsWith(e.allowed_root+'/')),access=nginx(c.files[A]),os=lines(c.files['/var/log/audit/file.log']).map(kv);
  const success=app.find(e=>e.result==='success'),read=os.find(e=>e.event==='read'&&e.request_id===success.request_id&&e.result==='success'),denied=app.find(e=>e.reason==='outside_root'),missing=app.find(e=>e.reason==='not_found');
  const request=access.find(e=>e.id===success.request_id),relative=new URL('https://lab.test'+request.path).searchParams.get('file');
  const canonical=require('node:path').posix.resolve(success.allowed_root,relative);
@@ -367,12 +367,12 @@ const answers={};
 }
 {
  const c=extras.find(c=>c.id==='webauth'),app=events(c),session=lines(c.files['/var/log/session/events.log']).map(line=>({...kv(line),timestamp:line.split(' ')[0]}));
- const login=app.find(e=>e.action==='login'&&e.result==='success'),attempts=app.filter(e=>e.action==='login'&&e.src_ip===login.src_ip),report=app.find(e=>e.action==='report_view'&&e.session_id===login.session_id),revoke=session.find(e=>e.event==='revoke'&&e.session_id===login.session_id);
+ const login=app.find(e=>e.action==='login'&&e.result==='success'&&app.some(f=>f.action==='login'&&f.result==='failure'&&f.src_ip===e.src_ip)),attempts=app.filter(e=>e.action==='login'&&e.src_ip===login.src_ip),report=app.find(e=>e.action==='report_view'&&e.session_id===login.session_id),revoke=session.find(e=>e.event==='revoke'&&e.session_id===login.session_id);
  test('webauth issue/use/revoke all correspond',()=>{const issue=session.find(e=>e.event==='issue'&&e.session_id===login.session_id),use=session.find(e=>e.event==='validate'&&e.request_id===report.request_id),logout=app.find(e=>e.action==='logout'&&e.session_id===login.session_id);assert.equal(issue.actor,login.actor);assert.equal(issue.timestamp,login.timestamp);assert.equal(use.result,'success');assert.equal(use.session_id,login.session_id);assert.equal(logout.timestamp,revoke.timestamp);assert.equal(logout.revoked,true);});
  answers.webauth={source:login.src_ip,'failure-count':String(attempts.filter(e=>e.result==='failure').length),'name-count':String(new Set(attempts.map(e=>e.actor)).size),account:login.actor,'login-time':timeOnly(login.timestamp),session:login.session_id,resource:report.resource,rows:String(report.rows),mfa:String(login.mfa_used),'revoke-time':timeOnly(revoke.timestamp)};
 }
 {
- const c=extras.find(c=>c.id==='ssrf'),app=events(c).filter(e=>e.action==='url_fetch'),egress=lines(c.files['/var/log/egress/http.log']).map(kv);
+ const c=extras.find(c=>c.id==='ssrf'),app=events(c).filter(e=>e.action==='url_fetch'&&e.src_ip===events(c).find(a=>a.reason==='destination_policy').src_ip),egress=lines(c.files['/var/log/egress/http.log']).map(kv);
  const success=app.find(e=>e.result==='success'),denied=app.find(e=>e.reason==='destination_policy'),flow=egress.filter(e=>e.request_id===success.request_id),final=flow.find(e=>e.result==='success'),redirect=flow.find(e=>e.result==='redirect');
  test('ssrf independent redirect and fetch prove final response',()=>{assert.equal(flow.length,2);assert.equal(redirect.location,success.final_url);assert.equal(new URL(success.final_url).hostname,final.host);assert.equal(+final.bytes,success.bytes);assert.equal(+final.status,200);assert.notEqual(final.src,success.src_ip);assert(!egress.some(e=>e.request_id===denied.request_id));});
  answers.ssrf={source:success.src_ip,blocked:denied.request_id,confirmed:success.request_id,'internal-ip':final.dst,'worker-ip':final.src,redirect:redirect.status,bytes:String(+final.bytes),'egress-count':String(egress.filter(e=>app.some(a=>a.request_id===e.request_id)).length),'success-count':String(app.filter(e=>e.result==='success').length),'final-url':success.final_url};
@@ -385,15 +385,15 @@ const answers={};
 }
 {
  const c=extras.find(c=>c.id==='tamper'),app=events(c),trunc=app.find(e=>e.action==='file_truncate'&&e.result==='success'),auth=lines(c.files['/var/log/auth.log']),login=auth.find(l=>l.includes('Accepted publickey for '+trunc.actor+' ')),active=nginx(c.files[trunc.path]),collector=nginx(c.files['/var/log/collector/nginx-access.log']);
- test('tamper independent byte sizes and collector conservation',()=>{assert.equal(trunc.old_size,Buffer.byteLength(c.baselineFiles[trunc.path]));assert.equal(trunc.new_size,0);assert(c.baselineFiles[trunc.path].split('\n').filter(Boolean).every(l=>collector.some(e=>e.line===l)));assert(active.every(e=>collector.some(x=>x.id===e.id&&x.line===e.line)));assert.equal(app.filter(e=>e.action==='file_append').at(-1).new_size,Buffer.byteLength(c.files[trunc.path]));assert(auth.some(l=>l.includes('sudo['+trunc.ppid+']: '+trunc.actor+' :')&&l.includes('USER=root')));});
- answers.tamper={actor:trunc.actor,source:login.match(/ from (\S+) port/)[1],path:trunc.path,'old-size':String(Buffer.byteLength(c.baselineFiles[trunc.path])),'active-count':String(active.length),'collector-count':String(collector.length),euid:String(trunc.euid),pid:String(trunc.pid),serial:String(trunc.audit_serial),gap:String((Date.parse(trunc.timestamp)-Date.parse(login.split(' ')[0]))/1000)};
+ test('tamper independent byte sizes and collector conservation',()=>{assert.equal(trunc.old_size,Buffer.byteLength(c.baselineFiles[trunc.path]));assert.equal(trunc.new_size,0);assert(c.baselineFiles[trunc.path].split('\n').filter(Boolean).every(l=>collector.some(e=>e.line===l)));assert(active.every(e=>collector.some(x=>x.id===e.id&&x.line===e.line)));assert.equal(app.filter(e=>e.action==='file_append').at(-1).new_size,Buffer.byteLength(c.files[trunc.path]));assert(auth.some(l=>l.includes('sudo: '+trunc.actor+' :')&&kv(l).pid===String(trunc.ppid)&&l.includes('USER=root')));});
+ answers.tamper={actor:trunc.actor,source:login.match(/ from (\S+) port/)[1],path:trunc.path,'old-size':String(Buffer.byteLength(c.baselineFiles[trunc.path])),'active-count':String(active.length),'collector-count':String(collector.length),euid:String(trunc.euid),pid:String(trunc.pid),serial:String(trunc.audit_serial),gap:String((Date.parse(trunc.timestamp)-Date.parse('2026-08-12T'+login.match(/^Aug 12 (\S+)/)[1]+'Z'))/1000)};
 }
-const attackMarker={pathtraversal:/req-path-30[123]|action=file_read|"action":"file_read"/,webauth:/req-wa-50[1-7]|sess-lab-42/,ssrf:/req-ssrf-40[123]|config\.internal\.test/,upload:/req-up-40[1-4]|f-70[12]|event=exec/,tamper:/local-480[123]|\bmaint\b|file_truncate/};
+const attackMarker={pathtraversal:/req-path-30[123]|outside_root|\/etc\/app\/service.conf/,webauth:/req-wa-50[1-7]|sess-lab-42/,ssrf:/req-ssrf-40[123]|config\.internal\.test/,upload:/req-up-40[1-4]|f-70[12]|event=exec/,tamper:/local-480[123]|\bmaint\b|file_truncate/};
 for(const c of extras){
  for(const t of c.tasks)test(c.id+' independently derived answer '+t.id,()=>{assert.equal(typeof answers[c.id][t.id],'string','missing independent derivation');assert.equal(t.answer,answers[c.id][t.id]);});
  test(c.id+' every independent answer has a task',()=>assert.equal(Object.keys(answers[c.id]).length,c.tasks.length));
  for(const p of c.logPaths)test(c.id+' baseline has no scenario attack '+p,()=>assert(!attackMarker[c.id].test(c.baselineFiles[p]),p));
  test(c.id+' JSON and text audit events agree',()=>{const json=events(c),text=lines(c.files[T]);assert.equal(json.length,text.length);for(let i=0;i<json.length;i++){const j=json[i],l=text[i];assert(l.startsWith(j.timestamp+' '+j.host+' '));for(const [k,v]of Object.entries(j)){if(['host','timestamp'].includes(k))continue;assert(l.includes(k+'='+v),'mismatched '+k+': '+l);}}});
- for(const p of c.logPaths)test(c.id+' full log chronological '+p,()=>{let times=[];for(const l of lines(c.files[p])){if(l[0]==='{')times.push(Date.parse(JSON.parse(l).timestamp));else if(/^\d{4}-\d\d-\d\dT/.test(l))times.push(Date.parse(l.split(' ')[0]));else{const m=l.match(/\[(\d+)\/(\w+)\/(\d+):(\d\d:\d\d:\d\d) \+0000\]/);assert(m);times.push(Date.parse(`${m[1]} ${m[2]} ${m[3]} ${m[4]} GMT`));}}assert(times.every(Number.isFinite));for(let i=1;i<times.length;i++)assert(times[i]>=times[i-1],'timestamp order at line '+(i+1));});
+ for(const p of c.logPaths)test(c.id+' full log chronological '+p,()=>{let times=[];for(const l of lines(c.files[p])){if(l[0]==='{')times.push(Date.parse(JSON.parse(l).timestamp));else if(/^\d{4}-\d\d-\d\dT/.test(l))times.push(Date.parse(l.split(' ')[0]));else if(/^Aug 12 /.test(l))times.push(Date.parse('2026-08-12T'+l.split(/\s+/)[2]+'Z'));else{const m=l.match(/\[(\d+)\/(\w+)\/(\d+):(\d\d:\d\d:\d\d) \+0000\]/);assert(m);times.push(Date.parse(`${m[1]} ${m[2]} ${m[3]} ${m[4]} GMT`));}}assert(times.every(Number.isFinite));for(let i=1;i<times.length;i++)assert(times[i]>=times[i-1],'timestamp order at line '+(i+1));});
 }
 console.log('V4 cases QA:',passed,'passed,',failed,'failed');if(failed)process.exitCode=1;

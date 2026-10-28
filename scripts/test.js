@@ -9,13 +9,17 @@ const tests = [
   'shell-realism-test.js',
   'awk-sort-review-test.js',
   'case-realism-test.js',
+  'core-coherence-test.js',
+  'core-answers-test.js',
   'practice-test.js',
   'vi-test.js',
   'sl-test.js',
   'cases-test.js',
   'cases-extra-test.js',
+  'extra-coherence-test.js',
   'i18n-test.js',
   'curriculum-test.js',
+  'curriculum-review-test.js',
   'release-check.js'
 ];
 

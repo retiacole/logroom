@@ -529,7 +529,7 @@
   $('doom-skip').addEventListener('click',finishRootGameOver);
   $('doom-dialog').addEventListener('cancel',e=>{e.preventDefault();finishRootGameOver();});
   $('export-report').addEventListener('click',()=> {
-    const progress=currentCase.tasks.map((t,i)=>tr`${i+1}. ${t.label}\n解答：${cs.answers[t.id] || tr('未入力')}\n判定：${cs.solved.includes(t.id)?tr('正解'):tr('未正解')}`).join('\n\n');
+    const progress=currentCase.tasks.map((t,i)=>tr`${i+1}. ${t.label}\n解答：${cs.answers[t.id] || tr('未入力')}\n判定：${cs.solved.includes(t.id)&&isCorrect(t,cs.answers[t.id]||'')?tr('正解'):tr('未正解')}`).join('\n\n');
     const exitReport=currentCase.exitExercise?'\n'+currentCase.exitExercise.title+'\n'+cs.exit.evidence.map(id=>{const e=currentCase.exitExercise.evidence.find(x=>x.id===id);return e?e.path+':'+e.line+' '+e.quote:'';}).join('\n')+'\n'+currentCase.exitExercise.questions.map(q=>q.label+': '+(q.options.find(o=>o.value===cs.exit.answers[q.id])?.label||tr('未入力'))).join('\n')+'\n'+tr('短い引継ぎメモ（自己比較用）')+'\n'+cs.exit.note+'\n':'';
     const text=exitReport+(currentCase.clockNote||'')+'\n'+tr`Logroom 調査メモ\n${currentCase.title}\n状態：${cs.attackApplied?tr('攻撃後ログ'):tr('正常ログ')}\nデータは架空 / 時刻の前提は冒頭参照\n書き出し：${new Date().toLocaleString(state.locale)}\n\n調査メモ\n${cs.notes || tr('（メモはまだありません）')}\n\n設問への解答\n${progress}\n\nコマンド履歴\n${cs.history.join('\n')}\n`;
     const blob=new Blob([text],{type:'text/plain;charset=utf-8'}), url=URL.createObjectURL(blob), a=node('a');
