@@ -62,7 +62,7 @@ async function checkLinks(page, item) {
 
 (async () => {
   const browser = await chromium.launch(launchOptions);
-  const context = await browser.newContext({viewport: {width: 1440, height: 1050}});
+  const context = await browser.newContext({locale:'ja-JP',viewport: {width: 1440, height: 1050}});
   const page = await context.newPage();
   const errors = [], network = [];
   const observe = p => {
@@ -254,7 +254,7 @@ async function checkLinks(page, item) {
     }
 
     // A corrupt saved preference falls back to Japanese without discarding progress.
-    const fallbackContext = await browser.newContext();
+    const fallbackContext = await browser.newContext({locale:'ja-JP'});
     const fallbackPage = await fallbackContext.newPage(); observe(fallbackPage);
     await fallbackPage.addInitScript(({storeKey, saved}) => {saved.locale = 'invalid-locale'; localStorage.setItem(storeKey, JSON.stringify(saved));}, {storeKey: key, saved: reset});
     await fallbackPage.goto(url);
@@ -267,7 +267,7 @@ async function checkLinks(page, item) {
     await fallbackContext.close();
 
     // Storage-denied browsers still switch languages and keep state within the tab.
-    const deniedContext = await browser.newContext();
+    const deniedContext = await browser.newContext({locale:'ja-JP'});
     const deniedPage = await deniedContext.newPage(); observe(deniedPage);
     await deniedPage.addInitScript(() => Object.defineProperty(window, 'localStorage', {get() {throw new DOMException('Storage denied for test', 'SecurityError');}}));
     await deniedPage.goto(url);

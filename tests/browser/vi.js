@@ -1,7 +1,7 @@
 const {chromium,launchOptions,artifacts}=require('./helpers.js');
 const assert=require('assert/strict');const path=require('path');const {pathToFileURL}=require('url');
 (async()=>{
- const browser=await chromium.launch(launchOptions),page=await browser.newPage({viewport:{width:1366,height:900}});
+ const browser=await chromium.launch(launchOptions),page=await browser.newPage({locale:'ja-JP',viewport:{width:1366,height:900}});
  const errors=[],network=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))network.push(r.url());});
  await page.goto(pathToFileURL(path.resolve(__dirname,'../../index.html')).href);
  const run=async c=>{await page.locator('#command-input').fill(c);await page.locator('#terminal-form').evaluate(f=>f.requestSubmit());};

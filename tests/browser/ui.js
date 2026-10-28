@@ -1,5 +1,5 @@
 const {chromium,launchOptions,artifacts}=require('./helpers.js');const assert=require('assert/strict');const path=require('path');const {pathToFileURL}=require('url');
-(async()=>{const browser=await chromium.launch(launchOptions),page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))requests.push(r.url());});
+(async()=>{const browser=await chromium.launch(launchOptions),page=await browser.newPage({locale:'ja-JP',viewport:{width:1440,height:1000}}),errors=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))requests.push(r.url());});
  await page.goto(pathToFileURL(path.resolve(__dirname,'../../index.html')).href);
  const all=await page.evaluate(()=>LOG_LAB_CASES.filter(c=>!c.entry).map(c=>({id:c.id,title:c.title,tasks:c.tasks,context:c.context,logPaths:c.logPaths,debrief:c.debrief})));
  assert.equal(all.length,10);assert.equal(all.reduce((n,c)=>n+c.tasks.length,0),104);

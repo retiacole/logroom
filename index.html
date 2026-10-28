@@ -102,7 +102,7 @@ body.doom-active{overflow:hidden;background:#000}
 <div class="app" id="app-shell">
   <header class="app-header">
     <a href="#main" class="skip-link">演習へ移動</a>
-    <div class="brand"><span class="brand-mark" aria-hidden="true">&gt;_</span><div><h1>Logroom <span class="version header-version">v0.3.1</span><span class="edition"> / INCIDENT LAB</span></h1><p>ログをたどる。根拠をつかむ。</p></div></div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true">&gt;_</span><div><h1>Logroom <span class="version header-version">v0.3.2</span><span class="edition"> / INCIDENT LAB</span></h1><p>ログをたどる。根拠をつかむ。</p></div></div>
     <div class="header-right"><label class="language-control" for="language-select"><span>Language</span><select id="language-select" aria-label="Language"><option value="ja" data-language-name>日本語</option><option value="en" data-language-name>English</option><option value="th" data-language-name>ไทย</option></select></label><span class="offline"><span aria-hidden="true"></span>完全ローカル</span><button id="commands-open" class="button quiet" type="button">コマンド一覧</button><button id="guide-open" class="button quiet" type="button">使い方</button></div>
   </header>
   <div class="intro-strip"><p><strong>Linuxコマンドで、ログ分析の練習。</strong><span> インストール・アカウント・外部通信は不要です。</span></p><span class="simulation-label">合成ログ / コマンドの一部を再現</span></div>
@@ -133,7 +133,7 @@ body.doom-active{overflow:hidden;background:#000}
       <section role="tabpanel" id="panel-notes" aria-labelledby="tab-notes" hidden><label for="notes" class="notes-label">観測した事実と推測を分けて残す</label><textarea id="notes" rows="14" placeholder="事実：ログの日時、IP、アカウント、処理結果&#10;根拠：ファイル名と行番号&#10;推測：考えられる原因&#10;追加確認：まだ分からないこと" spellcheck="false"></textarea><button type="button" id="export-report" class="button primary">調査メモを書き出す</button><p class="muted">解答・メモ・履歴・仮想ファイルの変更は、このブラウザのlocalStorageに自動保存します（Cookieではありません）。同じブラウザ・同じHTMLの保存先で続きから再開できます。データの削除、プライベート閲覧、保存を禁止する設定では残らない場合があります。大事な調査メモは書き出して残してください。</p></section>
     </aside>
   </main>
-  <footer class="app-footer"><span>LOGROOM <span class="version">v0.3.1</span> · 防御・ログ分析のための演習</span><span>AIで作成（OpenAI Codex）</span><span id="save-status" role="status">保存先を確認中</span></footer>
+  <footer class="app-footer"><span>LOGROOM <span class="version">v0.3.2</span> · 防御・ログ分析のための演習</span><span>AIで作成（OpenAI Codex）</span><span id="save-status" role="status">保存先を確認中</span></footer>
 </div>
 <dialog id="guide-dialog" aria-labelledby="guide-title"><div class="dialog-heading"><h2 id="guide-title">はじめてのLogroom</h2><button type="button" class="button quiet" data-close="guide-dialog">閉じる</button></div><p>このアプリとドキュメントは、OpenAI Codex（AI）を使って作成しました。</p><ol class="guide-steps"><li><strong>正常ログを観察する</strong><p>ケースを選び、「前提・構成」で状況とログの範囲を確認します。最初は正常なログだけが入っています。すべて架空のデータです。時刻形式とタイムゾーンはケースのREADMEで確認します。</p><code>cat /home/analyst/README.txt</code></li><li><strong>ボタンで攻撃ログを生成する</strong><p>攻撃イベントを演習ファイルに反映します。実際に攻撃を送信したり、SQLやOSコマンドを実行したりすることはありません。入門モードでは正常ログのコピーが /baseline 以下に残ります。実践モードでは過去ログや集計で比較します。</p><code>diff -u /baseline/var/log/auth.log /var/log/auth.log</code></li><li><strong>コマンドで調べて解答する</strong><p>検索・集計をパイプで組み合わせ、複数ログの根拠を確認します。「コマンド一覧」、段階的なヒント、解説も使えます。各ケースの全問に正解すると、攻撃全体の詳しい解説が開けます。終了コード1は、grepで一致なし、diffで差分ありの場合も表示されます。</p></li><li><strong>サラの状態からやり直す</strong><p>「サラの状態に戻す」で選択中の演習のログ、解答、メモ、履歴、作成ファイルを初期化します。他の演習は保持されます。</p></li></ol><div class="guide-limits"><strong>再現する範囲</strong><p>ファイルの移動・表示、検索、集計、差分比較、JSONの抽出、パイプ、仮想ファイルへの出力などを練習します。完全なLinuxシェルではなく、未対応のオプション・構文はエラーになります。サービス起動、パッケージ追加、実ネットワーク通信は行いません。</p><p>単独のHTMLファイルで動きます。組織の設定でローカルHTMLの実行が禁止されている場合は、同じファイルを許可された社内Webサイトに配置する必要があります。</p></div><button type="button" class="button primary" data-close="guide-dialog">演習に戻る</button></dialog>
 <dialog id="pager-dialog" aria-labelledby="pager-title" class="pager-dialog"><div class="dialog-heading"><h2 id="pager-title">less</h2><button type="button" class="button quiet" data-close="pager-dialog">閉じる / q</button></div><form id="pager-search-form" class="pager-search"><label for="pager-search">検索 /</label><input id="pager-search" type="search" placeholder="文字列で検索"><button type="submit" class="button">検索</button><button type="button" id="pager-next" class="button">次へ / n</button><span id="pager-match" role="status" aria-live="polite"></span></form><div id="pager-content" class="pager-content" tabindex="0"></div><p class="muted">Space / PageDown でスクロール · / で検索 · n / Shift+N で次 / 前の一致 · q で閉じる</p></dialog>
@@ -1049,7 +1049,17 @@ globalThis.LOGROOM_UI_TRANSLATIONS={
 (function(root){
   'use strict';
   const languages=['ja','en','th'];
-  let locale='ja';
+  function browserLocale(){
+    let preferred='';
+    try{
+      const values=root.navigator?.languages;
+      if(Array.isArray(values))preferred=values.find(value=>typeof value==='string'&&value.trim())||'';
+    }catch(_){/* Browser language access is optional. */}
+    if(!preferred)try{preferred=root.navigator?.language||'';}catch(_){/* Use English if unavailable. */}
+    const primary=typeof preferred==='string'?preferred.trim().toLowerCase().split('-')[0]:'';
+    return primary==='ja'?'ja':primary==='th'?'th':'en';
+  }
+  let locale=browserLocale();
   const staticNodes=[],staticAttributes=[];
   let originalTitle='';
   function t(input,...values){
@@ -1065,7 +1075,7 @@ globalThis.LOGROOM_UI_TRANSLATIONS={
     // Callback replacement never interprets $&, backslashes, or braces in user data.
     return tagged?translated.replace(/\{(\d+)\}/g,(match,n)=>+n<values.length?String(values[+n]):match):translated;
   }
-  function setLocale(value){locale=languages.includes(value)?value:'ja';return locale;}
+  function setLocale(value){locale=languages.includes(value)?value:browserLocale();return locale;}
   function captureStatic(document){
     originalTitle=document.title;
     const walker=document.createTreeWalker(document.body,4);

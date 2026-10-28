@@ -3,6 +3,9 @@
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 
+// This translation suite intentionally starts in Japanese; locale detection has a separate suite.
+Object.defineProperty(globalThis, 'navigator', {value: {language: 'ja-JP', languages: ['ja-JP']}, configurable: true});
+
 // Relative imports make this suite work in an extracted release or any checkout.
 for (const source of [
   'cases', 'cases-extra', 'case-context', 'case-reading-a', 'case-reading-b'

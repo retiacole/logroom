@@ -3,7 +3,7 @@
 const path = require('node:path');
 const {spawnSync} = require('node:child_process');
 const root = path.resolve(__dirname, '..');
-const tests = ['ui.js', 'vi.js', 'gameover.js', 'sl.js', 'i18n.js', 'practice.js', 'curriculum.js'];
+const tests = ['ui.js', 'vi.js', 'gameover.js', 'sl.js', 'i18n.js', 'language-defaults.js', 'practice.js', 'curriculum.js'];
 
 for (const test of tests) {
   console.log(`Browser suite: ${test}`);
