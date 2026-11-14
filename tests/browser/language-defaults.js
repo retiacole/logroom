@@ -28,7 +28,15 @@ const key='logroom.offline.v1';
         if(saved!==undefined)assert.equal(await page.locator('#notes').inputValue(),'Keep this investigation note');
         await page.locator('#language-select').selectOption('ja');
         assert.equal(await page.locator('html').getAttribute('lang'),'ja');
-        if(!blocked){await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));await page.reload();assert.equal(await page.locator('html').getAttribute('lang'),'ja');}
+        if(!blocked){
+          const scenario=JSON.stringify({browserLanguage,expected,saved});
+          await page.evaluate(()=>window.dispatchEvent(new Event('pagehide')));
+          const persisted=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+          assert.equal(persisted?.locale,'ja',scenario+' persists the selected language before reload');
+          await page.reload();
+          const restored=await page.evaluate(key=>({lang:document.documentElement.lang,locale:LogroomI18n.locale,stored:JSON.parse(localStorage.getItem(key))?.locale}),key);
+          assert.equal(restored.lang,'ja',scenario+' after reload: '+JSON.stringify(restored));
+        }
         assert.deepEqual(errors,[]);
       }finally{await context.close();}
     }
