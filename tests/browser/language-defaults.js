@@ -18,7 +18,13 @@ const key='logroom.offline.v1';
         const page=await context.newPage();const errors=[];
         page.on('pageerror',error=>errors.push(error.message));
         await page.addInitScript(({saved,blocked,key})=>{
-          if(saved!==undefined&&!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify({version:1,caseId:'ssh',cases:{ssh:{notes:'Keep this investigation note'}},locale:saved}));
+          // addInitScript also runs on reload. Never let the fixture restore the
+          // original preference over the user's newly saved choice.
+          const fixtureKey='logroom.test.language-fixture';
+          if(!sessionStorage.getItem(fixtureKey)){
+            if(saved!==undefined)localStorage.setItem(key,JSON.stringify({version:1,caseId:'ssh',cases:{ssh:{notes:'Keep this investigation note'}},locale:saved}));
+            sessionStorage.setItem(fixtureKey,'initialized');
+          }
           if(blocked)Object.defineProperty(window,'localStorage',{get(){throw new DOMException('blocked','SecurityError');}});
         },{saved,blocked,key});
         await page.goto(url);
@@ -36,6 +42,9 @@ const key='logroom.offline.v1';
           await page.reload();
           const restored=await page.evaluate(key=>({lang:document.documentElement.lang,locale:LogroomI18n.locale,stored:JSON.parse(localStorage.getItem(key))?.locale}),key);
           assert.equal(restored.lang,'ja',scenario+' after reload: '+JSON.stringify(restored));
+          assert.equal(restored.locale,'ja',scenario+' restores the application locale');
+          assert.equal(restored.stored,'ja',scenario+' retains the persisted preference');
+          if(saved!==undefined)assert.equal(await page.locator('#notes').inputValue(),'Keep this investigation note');
         }
         assert.deepEqual(errors,[]);
       }finally{await context.close();}
