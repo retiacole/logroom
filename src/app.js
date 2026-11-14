@@ -429,18 +429,21 @@
   }
   $('entry-skip').addEventListener('click',()=>selectCase('ssh'));
   $('terminal-form').addEventListener('submit',e=> {e.preventDefault();runCommand($('command-input').value);});
+  let releaseCompletionTab=false;
   $('command-input').addEventListener('keydown',e=> {
     const input=e.target;
     if(trainActive){if(e.key==='Escape'||e.ctrlKey&&e.key.toLowerCase()==='c'&&input.selectionStart===input.selectionEnd)e.preventDefault();return;}
     if (e.isComposing) return;
+    if(e.key==='Escape'){releaseCompletionTab=true;return;}
+    const releaseTab=releaseCompletionTab;releaseCompletionTab=false;
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       if (!cs.history.length) return;e.preventDefault();
       if (historyIndex===cs.history.length) draft=input.value;
       historyIndex=Math.max(0,Math.min(cs.history.length,historyIndex+(e.key==='ArrowUp'?-1:1)));
       input.value=historyIndex===cs.history.length?draft:cs.history[historyIndex];
       requestAnimationFrame(()=>input.setSelectionRange(input.value.length,input.value.length));
-    } else if (e.key==='Tab' && !e.shiftKey) {
-      e.preventDefault();completeInput();
+    } else if (e.key==='Tab' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && !releaseTab && input.value.trim()) {
+      if(completeInput())e.preventDefault();
     } else if (e.ctrlKey && e.key.toLowerCase()==='l') {e.preventDefault();clearScreen();}
     else if (e.ctrlKey && e.key.toLowerCase()==='c' && !input.value.substring(input.selectionStart,input.selectionEnd)) {e.preventDefault();const entry={command:input.value+'^C',cwd:shell.cwd,stdout:'',stderr:''};cs.entries.push(entry);appendEntry(entry);input.value='';historyIndex=cs.history.length;save();}
     else if (e.key !== 'Control' && e.key !== 'Shift' && e.key !== 'Alt') { if (historyIndex!==cs.history.length) historyIndex=cs.history.length; }
@@ -467,6 +470,7 @@
     let common=candidates[0];for (const c of candidates) while (!c.startsWith(common)) common=common.slice(0,-1);
     if (common.length>prefix.length) input.value=value.slice(0,value.length-prefix.length)+common+(candidates.length===1&&!common.endsWith('/')?' ':'');
     else toast(candidates.slice(0,12).join('  ')+(candidates.length>12?' …':''));
+    return true;
   }
   function clearScreen() {cs.entries=[];$('terminal-output').replaceChildren();save();$('command-input').focus();}
   $('terminal-clear').addEventListener('click',clearScreen);

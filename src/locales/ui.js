@@ -1,6 +1,7 @@
 /* Japanese source text -> English and Thai UI strings. */
 globalThis.LOGROOM_UI_TRANSLATIONS={
   "en": {
+    "次の操作へ移動": "Move to the next control",
     "保存はこのタブ内のみ": "Saved in this tab only",
     "このブラウザに保存済み": "Saved in this browser",
     "永続保存できません · メモを書き出せます": "Persistent storage unavailable · Export your notes",
@@ -445,6 +446,7 @@ globalThis.LOGROOM_UI_TRANSLATIONS={
     "この設定の初期状態に戻しました。": "Restored this setting to its initial state."
   },
   "th": {
+    "次の操作へ移動": "ไปยังตัวควบคุมถัดไป",
     "保存はこのタブ内のみ": "บันทึกเฉพาะในแท็บนี้",
     "このブラウザに保存済み": "บันทึกในเบราว์เซอร์นี้แล้ว",
     "永続保存できません · メモを書き出せます": "บันทึกถาวรไม่ได้ · ส่งออกบันทึกของคุณได้",

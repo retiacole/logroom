@@ -1,6 +1,19 @@
 const {chromium,launchOptions,artifacts}=require('./helpers.js');const assert=require('assert/strict');const path=require('path');const {pathToFileURL}=require('url');
 (async()=>{const browser=await chromium.launch(launchOptions),page=await browser.newPage({locale:'ja-JP',viewport:{width:1440,height:1000}}),errors=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/^https?:/.test(r.url()))requests.push(r.url());});
  await page.goto(pathToFileURL(path.resolve(__dirname,'../../index.html')).href);
+
+ // Completion must preserve ordinary Tab navigation and provide an escape path.
+ const command=page.locator('#command-input');
+ for(const value of ['', 'no_such_command_123']){
+  await command.fill(value);await command.press('Tab');
+  assert.equal(await page.locator('.run-button').evaluate(e=>e===document.activeElement),true);
+ }
+ await command.fill('pw');await command.press('Tab');assert.equal(await command.inputValue(),'pwd ');
+ await command.fill('pw');await command.press('Escape');await command.press('Tab');
+ assert.equal(await page.locator('.run-button').evaluate(e=>e===document.activeElement),true);
+ await command.fill('pw');await command.press('Shift+Tab');
+ assert.equal(await command.evaluate(e=>e===document.activeElement),false);
+ await command.fill('');
  const all=await page.evaluate(()=>LOG_LAB_CASES.filter(c=>!c.entry).map(c=>({id:c.id,title:c.title,tasks:c.tasks,context:c.context,logPaths:c.logPaths,debrief:c.debrief})));
  assert.equal(all.length,10);assert.equal(all.reduce((n,c)=>n+c.tasks.length,0),104);
  for(const c of all){assert.ok(c.debrief.knowledge.length>=3,c.id+' knowledge');assert.ok(c.debrief.history.length>=1,c.id+' history');assert.ok(c.debrief.references.length>=2,c.id+' references');for(const r of [...c.debrief.references,...c.debrief.history])assert.equal(new URL(r.url).protocol,'https:');}
