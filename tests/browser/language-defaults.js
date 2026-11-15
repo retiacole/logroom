@@ -18,13 +18,11 @@ const key='logroom.offline.v1';
         const page=await context.newPage();const errors=[];
         page.on('pageerror',error=>errors.push(error.message));
         await page.addInitScript(({saved,blocked,key})=>{
-          // addInitScript also runs on reload. Never let the fixture restore the
-          // original preference over the user's newly saved choice.
-          const fixtureKey='logroom.test.language-fixture';
-          if(!sessionStorage.getItem(fixtureKey)){
-            if(saved!==undefined)localStorage.setItem(key,JSON.stringify({version:1,caseId:'ssh',cases:{ssh:{notes:'Keep this investigation note'}},locale:saved}));
-            sessionStorage.setItem(fixtureKey,'initialized');
-          }
+          // addInitScript also runs on reload. Seed only an empty store so the
+          // fixture cannot overwrite a choice already persisted by the app.
+          // Do not use sessionStorage as a guard: file URL reloads can give it
+          // a fresh storage area in Chromium.
+          if(saved!==undefined&&localStorage.getItem(key)===null)localStorage.setItem(key,JSON.stringify({version:1,caseId:'ssh',cases:{ssh:{notes:'Keep this investigation note'}},locale:saved}));
           if(blocked)Object.defineProperty(window,'localStorage',{get(){throw new DOMException('blocked','SecurityError');}});
         },{saved,blocked,key});
         await page.goto(url);
