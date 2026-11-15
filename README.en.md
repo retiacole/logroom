@@ -16,7 +16,7 @@ Part of **BLUE SERIES** — foundations, detection, and investigation. [Explore 
 
 **Read the logs. Follow the evidence.**
 
-[Play Now](https://retiacole.github.io/logroom/) · [Download one HTML file](https://github.com/retiacole/logroom/releases/latest/download/logroom.html)
+[Play Now](https://retiacole.github.io/logroom/) · [Download one HTML file](https://github.com/retiacole/logroom/releases/latest/download/logroom.html) · [Ask a question or report a problem](https://github.com/retiacole/logroom/issues/new/choose)
 
 **Practice log analysis with Linux-style commands, entirely in your browser.**
 
@@ -65,6 +65,12 @@ Logroom is a **log-analysis simulator**, not an operating system. No real server
 Progress, answers, notes, history, and virtual-file edits are saved in the browser’s **localStorage**, not cookies. The same progress is shared across all three interface languages in the same browser and origin. Changing browser, website, or local HTML location does not automatically transfer progress. Private browsing, storage restrictions, or clearing browser data can remove it. Export important notes; note export is not a restorable full-progress backup.
 
 **Reset to normal** clears the selected case’s answers, notes, history, and virtual-file changes. Other cases are preserved. The virtual `rm -rf --no-preserve-root /` command also resets the selected case after a GAME OVER animation. `sl` displays a short train animation that cannot be stopped with Ctrl+C.
+
+## Questions and problems
+
+[Ask a question or report a problem](https://github.com/retiacole/logroom/issues/new/choose)
+
+Questions, unclear instructions, and suggestions are welcome in Japanese or English. A GitHub account is required to post. Posts are public: use the course's sample data and leave out company or personal information.
 
 ## Documentation and development
 

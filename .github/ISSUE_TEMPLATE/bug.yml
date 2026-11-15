@@ -1,45 +1,46 @@
-name: 不具合の報告
-description: コマンド、演習、表示、保存の不具合を報告する
-title: '[不具合] '
+name: 不具合の報告 / Bug report
+description: コマンド・演習・表示・保存の問題を伝える / Report a command, lesson, display, or saving problem
+title: '[Bug] '
 body:
   - type: markdown
     attributes:
       value: |
-        再現できる手順があると調査しやすくなります。Logroomの演習ログを使用してください。実際の個人情報・認証情報・社内ログは貼らないでください。
+        日本語・英語どちらでも受け付けています。投稿内容は公開されます。Logroomの演習ログを使い、個人情報・認証情報・社内ログは含めないでください。
+        Japanese and English are welcome. Posts are public. Use Logroom's sample logs and leave out personal information, credentials, and company logs.
   - type: input
     id: browser
     attributes:
-      label: OS・ブラウザとバージョン
-      placeholder: Windows 11 / Edge 例：xxx
+      label: OS・ブラウザとバージョン（任意） / OS and browser version (optional)
+      placeholder: Windows 11 / Edge
     validations:
-      required: true
+      required: false
   - type: dropdown
     id: delivery
     attributes:
-      label: 開き方
+      label: 開き方（任意） / How you opened the app (optional)
       options:
         - GitHub Pages
-        - ダウンロードしたHTML
-        - ローカル開発サーバー
+        - ダウンロードしたHTML / Downloaded HTML
+        - ローカル開発サーバー / Local development server
     validations:
-      required: true
+      required: false
   - type: textarea
     id: steps
     attributes:
-      label: 再現手順
-      description: ケース名、入力コマンド、操作の順番を記載してください。
+      label: 再現手順 / Steps to reproduce
+      description: ケース名、入力コマンド、操作の順番を記載してください。 / Include the case name, commands, and sequence of actions, as far as you can remember.
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: 期待した結果
+      label: 期待した結果 / Expected result
     validations:
       required: true
   - type: textarea
     id: actual
     attributes:
-      label: 実際の結果
-      description: 可能なら画面、エラー文、コマンドの終了コードを添えてください。
+      label: 実際の結果 / Actual result
+      description: 可能ならエラー文やコマンドの終了コードも添えてください。 / Include error messages or command exit codes if available.
     validations:
       required: true

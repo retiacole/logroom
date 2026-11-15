@@ -17,7 +17,7 @@
 **ログを読み、証拠をつなぐ。**<br>
 *Read the logs. Follow the evidence.*
 
-[すぐにやってみる](https://retiacole.github.io/logroom/) · [HTML 1個をダウンロード](https://github.com/retiacole/logroom/releases/latest/download/logroom.html)
+[すぐにやってみる](https://retiacole.github.io/logroom/) · [HTML 1個をダウンロード](https://github.com/retiacole/logroom/releases/latest/download/logroom.html) · [質問・不具合を報告する](https://github.com/retiacole/logroom/issues/new/choose)
 
 **インストール不要。ブラウザだけで、Linuxコマンドによるログ分析を練習する教材です。**
 
@@ -95,9 +95,11 @@ Cookieではなく、ブラウザの **localStorage** に解答・メモ・履�
 
 同じく仮想ターミナルで `rm -rf --no-preserve-root /` を実行すると、画面崩壊と「GAME OVER」の演出のあと、**選択中のケース**が正常ログの初期状態に戻ります。そのケースの解答・メモ・履歴・作成ファイルは消えます。他ケースの進捗は保持します。
 
-## 不具合の報告
+## 質問・不具合の報告
 
-再現するケース、入力したコマンド、期待した結果、実際の結果、ブラウザ名を添えてIssueを作成してください。実際の組織のログ、秘密情報、個人情報は含めず、教材の合成データで再現できる例があると調査しやすくなります。
+[質問・不具合を報告する](https://github.com/retiacole/logroom/issues/new/choose)
+
+分かりにくかった点や改善提案も、日本語・英語で受け付けています。投稿にはGitHubアカウントが必要です。内容は公開されるため、社内情報・個人情報は含めず、教材のデータで説明してください。
 
 ## 開発する
 
