@@ -17,15 +17,21 @@ const key='logroom.offline.v1';
       try{
         const page=await context.newPage();const errors=[];
         page.on('pageerror',error=>errors.push(error.message));
-        await page.addInitScript(({saved,blocked,key})=>{
-          // addInitScript also runs on reload. Seed only an empty store so the
-          // fixture cannot overwrite a choice already persisted by the app.
-          // Do not use sessionStorage as a guard: file URL reloads can give it
-          // a fresh storage area in Chromium.
-          if(saved!==undefined&&localStorage.getItem(key)===null)localStorage.setItem(key,JSON.stringify({version:1,caseId:'ssh',cases:{ssh:{notes:'Keep this investigation note'}},locale:saved}));
+        // Seed before the application starts, then remove the bootstrap itself.
+        // A reload must exercise only the application's persistence, with no
+        // fixture capable of restoring its original language or notes.
+        const session=await context.newCDPSession(page);
+        await session.send('Page.enable');
+        const initialize=({saved,blocked,key})=>{
+          if(saved!==undefined)localStorage.setItem(key,JSON.stringify({version:1,caseId:'ssh',cases:{ssh:{notes:'Keep this investigation note'}},locale:saved}));
           if(blocked)Object.defineProperty(window,'localStorage',{get(){throw new DOMException('blocked','SecurityError');}});
-        },{saved,blocked,key});
+        };
+        const {identifier}=await session.send('Page.addScriptToEvaluateOnNewDocument',{
+          source:`(${initialize})(${JSON.stringify({saved,blocked,key})})`,
+        });
         await page.goto(url);
+        await session.send('Page.removeScriptToEvaluateOnNewDocument',{identifier});
+        await session.detach();
         assert.equal(await page.locator('html').getAttribute('lang'),expected);
         assert.equal(await page.locator('#language-select').inputValue(),expected);
         assert.equal(await page.evaluate(()=>LogroomI18n.locale),expected);
