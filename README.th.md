@@ -2,6 +2,12 @@
   <img src="docs/images/logroom-banner.png" width="960" alt="ภาพพิกเซลอาร์ตของตัวละคร Logroom ในทุ่งหญ้า">
 </p>
 
+<p align="center">
+  <a href="https://github.com/retiacole#blue-series"><img src="docs/images/blue-series.svg" width="960" alt="BLUE SERIES — 守るための基礎・検知・調査 / Foundations, detection and investigation"></a>
+</p>
+
+ส่วนหนึ่งของ **BLUE SERIES** — พื้นฐาน การตรวจจับ และการสืบสวน [ดูซีรีส์](https://github.com/retiacole#blue-series) · [RED SERIES: pentestroom](https://github.com/retiacole/pentestroom) เป็นเส้นทางเสริมสำหรับเรียนรู้การตรวจสอบช่องโหว่
+
 # Logroom
 
 [日本語](README.md) · [English](README.en.md) · **ภาษาไทย**
