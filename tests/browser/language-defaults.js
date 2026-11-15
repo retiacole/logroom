@@ -1,13 +1,29 @@
 'use strict';
 const {chromium,launchOptions}=require('./helpers.js');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const http=require('node:http');
 const path=require('node:path');
-const {pathToFileURL}=require('node:url');
-const url=pathToFileURL(path.resolve(__dirname,'../../index.html')).href;
+const html=fs.readFileSync(path.resolve(__dirname,'../../index.html'));
 const key='logroom.offline.v1';
 (async()=>{
-  const browser=await chromium.launch(launchOptions);
+  // file: localStorage behavior is platform-dependent. Give this persistence
+  // matrix a stable origin; i18n.js still exercises the standalone file itself.
+  const server=http.createServer((request,response)=>{
+    if(request.url!=='/'&&request.url!=='/index.html'){
+      response.writeHead(404);response.end();return;
+    }
+    response.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
+    response.end(html);
+  });
+  await new Promise((resolve,reject)=>{
+    server.once('error',reject);
+    server.listen(0,'127.0.0.1',resolve);
+  });
+  const url=`http://127.0.0.1:${server.address().port}/index.html`;
+  let browser;
   try{
+    browser=await chromium.launch(launchOptions);
     for(const [browserLanguage,expected,saved,blocked]of [
       ['ja-JP','ja'],['th-TH','th'],['en-US','en'],['fr-FR','en'],
       ['en-US','ja','ja'],['ja-JP','th','th'],['th-TH','en','en'],
@@ -54,5 +70,8 @@ const key='logroom.offline.v1';
       }finally{await context.close();}
     }
     console.log('Browser defaults: ja/th/other, stored choices, invalid choice, denied storage and reload passed.');
-  }finally{await browser.close();}
+  }finally{
+    try{await browser?.close();}
+    finally{await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
+  }
 })().catch(error=>{console.error(error);process.exitCode=1;});
